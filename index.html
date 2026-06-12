@@ -55,7 +55,7 @@
     body { background-color: #020803; color: white; font-family: system-ui, -apple-system, sans-serif; overflow-x: hidden; user-select: none; }
     .glass { background: rgba(2, 10, 4, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(74, 222, 128, 0.15); box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
     .pitch-bg { background-image: linear-gradient(rgba(74,222,128,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(74,222,128,0.03) 1px, transparent 1px); background-size: 30px 30px; box-shadow: inset 0 0 150px rgba(0,0,0,0.98); }
-    .card-3d { transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-style: preserve-3d; }
+    .card-3d { transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-style: preserve-3d; cursor: pointer; }
     .card-3d:hover { transform: scale(1.05) translateY(-10px) rotateX(10deg); box-shadow: 0 30px 50px rgba(0,0,0,0.9); z-index: 50; }
     .card-flare { background: linear-gradient(135deg, rgba(255,255,255,0.6) 0%, transparent 50%); mix-blend-mode: overlay; pointer-events: none; }
     .momentum-bar { transition: width 0.3s linear; }
@@ -67,9 +67,9 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useRef, useMemo } = React;
+    const { useState, useEffect, useRef } = React;
 
-    const SFX = {
+    //    const SFX = {
       ready: false, synth: null, kick: null, noise: null,
       init: async () => {
         if(SFX.ready) return;
@@ -99,7 +99,7 @@
       }
     };
 
-    firebase.initializeApp({
+    //    firebase.initializeApp({
       apiKey: "AIzaSyBhFf89G1chtLnX73oNujjJTtuMMcqnQWQ",
       authDomain: "game-resenha.firebaseapp.com",
       projectId: "game-resenha",
@@ -109,9 +109,9 @@
     });
     const auth = firebase.auth();
     const db = firebase.database();
-    const APP_ID = 'draft-kings-goty-v4-3d';
+    const APP_ID = 'draft-kings-goty-v5';
 
-    // Banco de Dados Monstruoso e Nativo
+    // Banco de Dados Limpo, Seguro e Nativo (Imune a erros de Parsing)
     const PLAYER_DATABASE = [
       { id: 'pele_70', baseId: 'pele', name: 'Pelé', year: 1970, team: 'Santos', overall: 99, pos: 'ATA' },
       { id: 'zico_81', baseId: 'zico', name: 'Zico', year: 1981, team: 'Flamengo', overall: 98, pos: 'MEI' },
@@ -224,13 +224,11 @@
       const [events, setEvents] = useState([]);
       const [s1, setS1] = useState(0);
       const [s2, setS2] = useState(0);
-      const engineRef = useRef(null);
 
       useEffect(() => {
         if (!match || !match.played || !mountRef.current) return;
         if(Date.now() - match.startTime < 1000) SFX.whistle();
 
-        // 1. Configuração WebGL
         const width = mountRef.current.clientWidth;
         const height = mountRef.current.clientHeight;
         const scene = new THREE.Scene();
@@ -246,11 +244,9 @@
         mountRef.current.innerHTML = '';
         mountRef.current.appendChild(renderer.domElement);
 
-        // 2. Construção do Campo Tático Holográfico (Wireframe Lines)
         const fieldGroup = new THREE.Group();
         const lineMat = new THREE.LineBasicMaterial({ color: 0x22c55e, transparent: true, opacity: 0.3 });
         
-        // Linhas de borda e meio campo
         const fieldGeo = new THREE.BufferGeometry().setFromPoints([
           new THREE.Vector3(-15, 0, -25), new THREE.Vector3(15, 0, -25),
           new THREE.Vector3(15, 0, 25), new THREE.Vector3(-15, 0, 25),
@@ -261,7 +257,6 @@
         fieldGroup.add(new THREE.Line(fieldGeo, lineMat));
         fieldGroup.add(new THREE.Line(midLine, lineMat));
 
-        // Áreas dos Gols (Glow Boxes)
         const createGoal = (zPos, color) => {
           const g = new THREE.BoxGeometry(8, 3, 2);
           const m = new THREE.MeshBasicMaterial({ color: color, wireframe: true, transparent: true, opacity: 0.5 });
@@ -269,13 +264,12 @@
           mesh.position.set(0, 1.5, zPos);
           return mesh;
         };
-        const goal1 = createGoal(-25, 0xeab308); // P1 Goal (Defends this, P2 attacks here)
-        const goal2 = createGoal(25, 0x3b82f6);  // P2 Goal (Defends this, P1 attacks here)
+        const goal1 = createGoal(-25, 0xeab308); 
+        const goal2 = createGoal(25, 0x3b82f6);  
         fieldGroup.add(goal1);
         fieldGroup.add(goal2);
         scene.add(fieldGroup);
 
-        // 3. A Bola Mágica (Ponto de Luz e Esfera)
         const ballGeo = new THREE.SphereGeometry(0.5, 16, 16);
         const ballMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
         const ball = new THREE.Mesh(ballGeo, ballMat);
@@ -285,7 +279,6 @@
         ball.position.set(0, 0.5, 0);
         scene.add(ball);
 
-        // 4. Object Pool para Partículas de Gol (VFX)
         const particleCount = 40;
         const particles = new THREE.InstancedMesh(
           new THREE.BoxGeometry(0.3, 0.3, 0.3),
@@ -295,7 +288,7 @@
         const dummy = new THREE.Object3D();
         const pVelocities = [];
         for(let i=0; i<particleCount; i++) {
-           particles.setMatrixAt(i, new THREE.Matrix4().makeScale(0,0,0)); // Esconde no init
+           particles.setMatrixAt(i, new THREE.Matrix4().makeScale(0,0,0)); 
            pVelocities.push(new THREE.Vector3(0,0,0));
         }
         scene.add(particles);
@@ -313,8 +306,7 @@
           setTimeout(() => { isExploding = false; for(let i=0; i<particleCount; i++) particles.setMatrixAt(i, new THREE.Matrix4().makeScale(0,0,0)); particles.instanceMatrix.needsUpdate = true; }, 1500);
         };
 
-        // 5. Motor de Física / Loop de Renderização
-        const msPerMin = 333; // 30 segundos = 90 minutos virtuais
+        const msPerMin = 333; 
         let animationId;
         let targetZ = 0;
         let targetX = 0;
@@ -330,62 +322,51 @@
           if (displayMin <= 90) {
             setLocalMin(displayMin);
             
-            // Lógica de Sync de Eventos (UI)
             const currentEvents = match.events.filter(e => e.minute <= displayMin);
             if (currentEvents.length !== events.length) {
                 setEvents(currentEvents.reverse());
                 const g1 = currentEvents.filter(e => e.type === 'goal' && e.teamId === match.p1.uid).length;
                 const g2 = currentEvents.filter(e => e.type === 'goal' && e.teamId === match.p2.uid).length;
                 
-                if (g1 > s1) { SFX.goal(); triggerGoalVFX(25); baseShake = 1.0; } // P1 ataca P2
-                if (g2 > s2) { SFX.goal(); triggerGoalVFX(-25); baseShake = 1.0; } // P2 ataca P1
+                if (g1 > s1) { SFX.goal(); triggerGoalVFX(25); baseShake = 1.0; } 
+                if (g2 > s2) { SFX.goal(); triggerGoalVFX(-25); baseShake = 1.0; } 
                 
                 setS1(g1); setS2(g2);
             }
 
-            // Lerp Engine (Smooth Interpolation)
-            // Acha o evento mais próximo para puxar a bola
             const activeEvent = match.events.find(e => Math.abs(e.minute - currentVirtualMin) < 1.5);
             
             if (activeEvent) {
-               if (activeEvent.teamId === match.p1.uid) { targetZ = 20; targetX = (Math.random()-0.5)*10; } // P1 no ataque
-               else { targetZ = -20; targetX = (Math.random()-0.5)*10; } // P2 no ataque
+               if (activeEvent.teamId === match.p1.uid) { targetZ = 20; targetX = (Math.random()-0.5)*10; } 
+               else { targetZ = -20; targetX = (Math.random()-0.5)*10; } 
             } else {
-               // Roda no meio campo com base no momentum
                const lastMom = match.momentumData?.find(m => m.min <= displayMin) || {val: 50};
-               // Mapeia 0-100 para -15 a 15 no Z
                targetZ = ((lastMom.val - 50) / 50) * 15; 
-               targetX = Math.sin(currentVirtualMin) * 5; // Movimento orgânico
+               targetX = Math.sin(currentVirtualMin) * 5; 
             }
 
-            // Fim de jogo: bola no meio
             if (currentVirtualMin >= 90) { targetZ = 0; targetX = 0; }
 
-            // Aplicar Lerp à Bola
             ball.position.z += (targetZ - ball.position.z) * 0.05;
             ball.position.x += (targetX - ball.position.x) * 0.05;
-            
-            // Quique orgânico
             ball.position.y = 0.5 + Math.abs(Math.sin(currentVirtualMin * 2)) * 1.5;
 
-            // Física de Partículas (se explodindo)
             if(isExploding) {
               for(let i=0; i<particleCount; i++) {
                 particles.getMatrixAt(i, dummy.matrix);
                 dummy.position.setFromMatrixPosition(dummy.matrix);
                 dummy.position.add(pVelocities[i]);
-                pVelocities[i].y -= 0.02; // Gravidade
+                pVelocities[i].y -= 0.02; 
                 dummy.updateMatrix();
                 particles.setMatrixAt(i, dummy.matrix);
               }
               particles.instanceMatrix.needsUpdate = true;
             }
 
-            // Camera Shake (Decay)
             if (baseShake > 0.01) {
               camera.position.x = (Math.random() - 0.5) * baseShake;
               camera.position.y = 15 + (Math.random() - 0.5) * baseShake;
-              baseShake *= 0.9; // Decay
+              baseShake *= 0.9; 
             } else {
               camera.position.x = 0;
               camera.position.y = 15;
@@ -397,7 +378,6 @@
 
         animate();
 
-        // Cleanup
         return () => {
           cancelAnimationFrame(animationId);
           if(mountRef.current) mountRef.current.innerHTML = '';
@@ -414,8 +394,6 @@
 
       return (
         <div className="glass rounded-2xl flex flex-col h-[600px] overflow-hidden border-green-800 shadow-2xl relative">
-          
-          {/* Header Placar */}
           <div className="p-4 border-b border-white/10 text-center relative z-20 bg-gradient-to-b from-black/90 to-transparent">
             <div className="font-black text-xs tracking-widest mb-2 flex justify-center items-center gap-2 text-yellow-400">
               {isFinished ? <><i className="fa-solid fa-flag-checkered"></i> FIM DE JOGO</> : <><i className="fa-solid fa-satellite-dish animate-pulse"></i> {localMin}' MINUTOS</>}
@@ -429,14 +407,11 @@
             </div>
           </div>
 
-          {/* O CANVAS 3D SUBSTITUI O FUNDO AQUI */}
           <div className="absolute inset-0 z-0">
              <div ref={mountRef} className="w-full h-full"></div>
-             {/* Fade na base para o texto não sumir */}
              <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black/90 to-transparent pointer-events-none"></div>
           </div>
 
-          {/* Feed de Eventos Sobreposto */}
           <div className="relative z-10 flex-1 overflow-y-auto p-4 space-y-2 mt-auto h-48 scrollbar-hide flex flex-col-reverse">
             {events.slice(0,4).map((ev, i) => {
               let bg = 'bg-black/60 border-green-900/50 text-gray-300 backdrop-blur-sm';
@@ -483,6 +458,7 @@
           } catch(e) {
             console.error("Auth Fail:", e);
             setError("Erro crítico ao conectar no servidor. Ative Login Anônimo.");
+            setIsAuthLoading(false);
           }
         };
         init();
@@ -557,7 +533,7 @@
         while (options.length < 3) {
            const mockId = `gen_${requiredPos}_${Date.now()}_${botIndex}`;
            options.push({
-             id: mockId, baseId: mockId, name: `Base Talent`, year: 2024, team: 'Academy', 
+             id: mockId, baseId: mockId, name: `Talento da Base`, year: 2024, team: 'Academy', 
              overall: 70 + Math.floor(Math.random()*12), pos: requiredPos
            });
            botIndex++;
@@ -580,8 +556,9 @@
         return chemBoost;
       };
 
-      const pickPlayer = async (player) => {
+      //      const pickPlayer = async (player) => {
         if (myTeam.length >= 11) return;
+        
         if (player.overall >= 93) {
           SFX.walkout();
           setWalkoutPlayer(player);
@@ -589,12 +566,14 @@
         } else SFX.pick();
         
         const newTeam = [...myTeam, player];
-        setMyTeam(newTeam);
+        setMyTeam(newTeam); // Update local visual state
         
         if (newTeam.length < 11) {
           pullPacks(newTeam.length);
         } else {
+          // Quando chegar no 11, fecha a porta de seleção visualmente
           setDraftOptions([]); 
+          
           const baseOvr = newTeam.reduce((acc, p) => acc + p.overall, 0) / 11;
           const chemOvr = calculateChemistry(newTeam);
           const finalOvr = Math.min(99, Math.round(baseOvr + chemOvr));
@@ -723,10 +702,13 @@
 
       // --- UI RENDER (States) ---
       if (isAuthLoading) return <div className="min-h-screen flex items-center justify-center bg-black text-green-500 font-black text-2xl animate-pulse"><i className="fa-solid fa-satellite-dish mr-3"></i> Conectando à Rede Neural...</div>;
+      
       if (appState === 'INIT') return <div className="min-h-screen flex items-center justify-center bg-black"><button onClick={initEngine} className="glass p-16 rounded-[3rem] flex flex-col items-center hover:scale-105 transition-all shadow-[0_0_80px_rgba(250,204,21,0.3)] border-2 border-yellow-500/50 group"><i className="fa-solid fa-power-off text-8xl text-yellow-500 mb-8 group-hover:animate-pulse"></i><h1 className="text-6xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-600 drop-shadow-lg">INICIALIZAR ENGINE 3D</h1></button></div>;
+      
       if (appState === 'MENU') return (
         <div className="min-h-screen flex items-center justify-center pitch-bg p-4"><div className="glass p-10 rounded-3xl w-full max-w-md shadow-2xl animate-slide-up border border-green-500/30 relative overflow-hidden"><div className="text-center mb-10"><i className="fa-solid fa-trophy text-7xl text-yellow-400 drop-shadow-[0_0_30px_rgba(250,204,21,0.6)] mb-4 animate-pulse-fast"></i><h1 className="text-5xl font-black italic tracking-tighter text-white">DRAFT KINGS</h1></div><div className="space-y-5"><input className="w-full p-4 bg-black/60 rounded-xl text-white outline-none border-2 border-green-900 focus:border-yellow-400 font-bold transition text-lg" placeholder="Seu Nome" value={playerName} onChange={e=>setPlayerName(e.target.value)} /><div className="flex gap-3"><input className="w-full p-4 bg-black/60 rounded-xl text-white outline-none border-2 border-green-900 uppercase focus:border-yellow-400 font-black transition text-lg" placeholder="SALA" value={roomId} onChange={e=>setRoomId(e.target.value.toUpperCase())} /><select className="p-4 bg-black/60 rounded-xl text-white outline-none border-2 border-green-900 font-bold" value={gameMode} onChange={e=>setGameMode(e.target.value)}><option value="knockout">MATA-MATA</option><option value="1v1">DUELO X1</option></select></div>{error && <div className="text-red-400 font-black text-sm text-center bg-red-950/80 border border-red-500 p-3 rounded-xl shadow-lg">{error}</div>}<div className="pt-4 space-y-3"><button onClick={handleCreateRoom} className="w-full bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-black py-4 rounded-xl shadow-[0_0_20px_rgba(250,204,21,0.4)] hover:scale-[1.03] transition text-lg">FUNDAR LIGA</button><button onClick={handleJoinRoom} className="w-full border-2 border-green-600 text-green-400 hover:bg-green-600 hover:text-white font-black py-4 rounded-xl transition text-lg">ENTRAR NA LIGA</button></div></div></div></div>
       );
+      
       if (!roomData) return <div className="min-h-screen flex items-center justify-center pitch-bg text-yellow-500 font-black text-2xl"><div className="glass p-8 rounded-2xl flex items-center animate-pulse"><i className="fa-solid fa-network-wired mr-4 text-4xl"></i> Sincronizando...</div></div>;
       
       if (appState === 'LOBBY') return (
