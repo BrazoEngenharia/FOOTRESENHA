@@ -3,14 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Brasfoot Draft Kings: GOTY Edition</title>
+  <title>Brasfoot Draft Kings: GOTY</title>
 
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
-          colors: { pitch: '#0a2310', gold: '#FBBF24' },
+          colors: { pitch: '#0a2310' },
           animation: {
             'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
             'slide-up': 'slideUp 0.4s ease-out forwards',
@@ -29,8 +30,9 @@
       }
     }
   </script>
+  
   <style>
-    body { background-color: #051108; overflow-x: hidden; color: white; font-family: system-ui, -apple-system, sans-serif; }
+    body { background-color: #051108; color: white; font-family: system-ui, sans-serif; overflow-x: hidden; }
     .glass { background: rgba(10, 35, 16, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(74, 222, 128, 0.15); }
     .pitch-bg {
       background-image: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
@@ -44,12 +46,14 @@
     ::-webkit-scrollbar-thumb { background: rgba(74, 222, 128, 0.5); border-radius: 4px; }
   </style>
 
+  <!-- Bibliotecas Base -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  
+  <!-- Firebase Realtime DB -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
@@ -58,9 +62,9 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useRef, useMemo } = React;
+    const { useState, useEffect, useRef } = React;
 
-    // --- ENGINE AUDIO NEURAL ---
+    // --- AUDIO ENGINE ---
     const SFX = {
       ready: false, synth: null, kick: null,
       init: async () => {
@@ -77,7 +81,7 @@
       goal: () => { if(SFX.ready){ SFX.kick.triggerAttackRelease("C1", "2n"); SFX.synth.triggerAttackRelease(["C4","E4","G4","C5"], "2n"); } }
     };
 
-    // --- FIREBASE CONFIG (SEU BANCO REAL) ---
+    // --- FIREBASE OFICIAL CONFIG ---
     firebase.initializeApp({
       apiKey: "AIzaSyBhFf89G1chtLnX73oNujjJTtuMMcqnQWQ",
       authDomain: "game-resenha.firebaseapp.com",
@@ -88,130 +92,48 @@
     });
     const auth = firebase.auth();
     const db = firebase.database();
-    const APP_ID = 'draft-kings-v2';
+    const APP_ID = 'draft-kings-v3';
 
-    // --- COMPRESSÃO DE DADOS: O ALGORITMO DE MEMÓRIA ---
-    // Formato: id|baseId|Nome|Ano|Time|Ovr|Posição
-    // Mais de 100 jogadores cirurgicamente escolhidos para garantir a variação (GOL, ZAG, LAT, VOL, MEI, PON, ATA)
-    const PLAYER_DATABASE = `
-      ney11|neymar|Neymar Jr|2011|Santos|96|PON
-      ney09|neymar|Neymar|2009|Santos|82|PON
-      ceni05|ceni|Rogério Ceni|2005|São Paulo|94|GOL
-      r10_11|r10|Ronaldinho|2011|Flamengo|92|MEI
-      r10_13|r10|Ronaldinho|2013|Atlético-MG|94|MEI
-      romario00|romario|Romário|2000|Vasco|97|ATA
-      edmundo97|edmundo|Edmundo|1997|Vasco|96|ATA
-      alex03|alex|Alex|2003|Cruzeiro|95|MEI
-      gabi19|gabigol|Gabigol|2019|Flamengo|92|ATA
-      bh19|bh|Bruno Henrique|2019|Flamengo|92|PON
-      arra19|arrascaeta|Arrascaeta|2019|Flamengo|91|MEI
-      dudu18|dudu|Dudu|2018|Palmeiras|90|PON
-      dudu15|dudu|Dudu|2015|Palmeiras|85|PON
-      marcos99|marcos|São Marcos|1999|Palmeiras|94|GOL
-      cassio12|cassio|Cássio|2012|Corinthians|92|GOL
-      cassio23|cassio|Cássio|2023|Corinthians|84|GOL
-      renato15|renato|Renato Augusto|2015|Corinthians|91|MEI
-      fred12|fred|Fred|2012|Fluminense|91|ATA
-      conca10|conca|Conca|2010|Fluminense|93|MEI
-      adri09|adriano|Adriano Imp.|2009|Flamengo|92|ATA
-      hulk21|hulk|Hulk|2021|Atlético-MG|92|ATA
-      ganso10|ganso|PH Ganso|2010|Santos|91|MEI
-      dale10|dale|D'Alessandro|2010|Internacional|91|MEI
-      ferna06|fernandao|Fernandão|2006|Internacional|90|ATA
-      luan17|luan|Luan|2017|Grêmio|91|ATA
-      gero17|geromel|Geromel|2017|Grêmio|91|ZAG
-      kann17|kannemann|Kannemann|2017|Grêmio|89|ZAG
-      miranda08|miranda|Miranda|2008|São Paulo|92|ZAG
-      dede13|dede|Dedé|2013|Cruzeiro|90|ZAG
-      gomez20|gomez|Gustavo Gómez|2020|Palmeiras|91|ZAG
-      fagner17|fagner|Fagner|2017|Corinthians|88|LAT
-      rcarlos10|rcarlos|Roberto Carlos|2010|Corinthians|89|LAT
-      marcelo23|marcelo|Marcelo|2023|Fluminense|88|LAT
-      felipe18|fmelo|Felipe Melo|2018|Palmeiras|87|VOL
-      casemiro12|case|Casemiro|2012|São Paulo|84|VOL
-      vampeta99|vampeta|Vampeta|1999|Corinthians|90|VOL
-      rincon99|rincon|Rincón|1999|Corinthians|91|VOL
-      mineiro05|mineiro|Mineiro|2005|São Paulo|90|VOL
-      josue05|josue|Josué|2005|São Paulo|89|VOL
-      danilo12|danilo|Danilo|2012|Corinthians|89|MEI
-      sheik12|sheik|Emerson Sheik|2012|Corinthians|90|PON
-      lucas12|lucas|Lucas Moura|2012|São Paulo|89|PON
-      calleri23|calleri|Calleri|2023|São Paulo|87|ATA
-      cano23|cano|Germán Cano|2023|Fluminense|91|ATA
-      arias23|arias|Arias|2023|Fluminense|88|PON
-      nino23|nino|Nino|2023|Fluminense|87|ZAG
-      everton19|er7|Éverton Ribeiro|2019|Flamengo|90|MEI
-      gerson19|gerson|Gerson|2019|Flamengo|89|VOL
-      amari12|amarilla|Amarilla|2013|Arbitragem|60|ZAG
-      wever20|weverton|Weverton|2020|Palmeiras|89|GOL
-      dida99|dida|Dida|1999|Corinthians|93|GOL
-      taffarel98|taffarel|Taffarel|1998|Atlético-MG|92|GOL
-      zetti93|zetti|Zetti|1993|São Paulo|92|GOL
-      jrbaiano97|baiano|Júnior Baiano|1997|Flamengo|88|ZAG
-      lugano05|lugano|Lugano|2005|São Paulo|91|ZAG
-      aldair95|aldair|Aldair|1995|Roma|93|ZAG
-      cafu93|cafu|Cafu|1993|São Paulo|94|LAT
-      arce99|arce|Arce|1999|Palmeiras|91|LAT
-      sorin00|sorin|Sorín|2000|Cruzeiro|90|LAT
-      gamarra98|gamarra|Gamarra|1998|Corinthians|93|ZAG
-      maurosilva94|msilva|Mauro Silva|1994|Bragantino|92|VOL
-      ricardinho02|ricardinho|Ricardinho|2002|Corinthians|90|MEI
-      marcelinho98|marcelinho|Marcelinho C.|1998|Corinthians|93|MEI
-      edmilson00|edmilson|Edmílson|2000|São Paulo|89|VOL
-      zidanilo10|danilo|Danilo|2010|Corinthians|88|MEI
-      pedro22|pedro|Pedro|2022|Flamengo|89|ATA
-      vini17|vini|Vini Jr|2017|Flamengo|81|PON
-      rodrygo18|rodrygo|Rodrygo|2018|Santos|82|PON
-      endrick23|endrick|Endrick|2023|Palmeiras|84|ATA
-      roque23|roque|Vitor Roque|2023|Athletico|83|ATA
-      paulinho12|paulinho|Paulinho|2012|Corinthians|91|VOL
-      ralf12|ralf|Ralf|2012|Corinthians|89|VOL
-      tardelli13|tardelli|Tardelli|2013|Atlético-MG|90|ATA
-      jo17|jo|Jô|2017|Corinthians|88|ATA
-      sobis06|sobis|Rafael Sóbis|2006|Internacional|89|ATA
-      tinga06|tinga|Tinga|2006|Internacional|89|MEI
-      clemer06|clemer|Clemer|2006|Internacional|86|GOL
-      victor13|victor|São Victor|2013|Atlético-MG|91|GOL
-      fabio10|fabio|Fábio|2010|Cruzeiro|91|GOL
-      prass15|prass|Fernando Prass|2015|Palmeiras|89|GOL
-      mina16|mina|Mina|2016|Palmeiras|88|ZAG
-      rocha20|rocha|Marcos Rocha|2020|Palmeiras|87|LAT
-      filipe19|filipe|Filipe Luís|2019|Flamengo|90|LAT
-      rafinha19|rafinha|Rafinha|2019|Flamengo|89|LAT
-      mari19|mari|Pablo Marí|2019|Flamengo|88|ZAG
-      caio19|rcaio|Rodrigo Caio|2019|Flamengo|89|ZAG
-      diegoalves19|dalves|Diego Alves|2019|Flamengo|88|GOL
-      diego19|diego|Diego Ribas|2019|Flamengo|87|MEI
-      willian14|bigode|Willian Bigode|2014|Cruzeiro|86|ATA
-      ricartg14|rgoulart|Ricardo Goulart|2014|Cruzeiro|90|MEI
-      nilton13|nilton|Nilton|2013|Cruzeiro|87|VOL
-      ceara06|ceara|Ceará|2006|Internacional|87|LAT
-      kleber09|gladiador|Kleber Gladiador|2009|Cruzeiro|88|ATA
-      valdivia08|mago|Valdívia|2008|Palmeiras|91|MEI
-      amoroso05|amoroso|Amoroso|2005|São Paulo|90|ATA
-      luizao00|luizao|Luizão|2000|Corinthians|91|ATA
-      edailson99|edilson|Edílson Capetinha|1999|Corinthians|92|ATA
-      guilherme99|guilherme|Guilherme|1999|Atlético-MG|90|ATA
-      marques99|marques|Marques|1999|Atlético-MG|89|PON
-      denilson97|denilson|Denílson|1997|São Paulo|91|PON
-      aristizabal03|aristi|Aristizábal|2003|Cruzeiro|89|ATA
-      deivid03|deivid|Deivid|2003|Cruzeiro|88|ATA
-      mota03|mota|Mota|2003|Cruzeiro|85|PON
-      maldonado03|maldonado|Maldonado|2003|Cruzeiro|87|VOL
-      cris03|cris|Cris|2003|Cruzeiro|88|ZAG
-      luisao03|luisao|Luisão|2003|Cruzeiro|89|ZAG
-      maicon03|maicon|Maicon|2003|Cruzeiro|87|LAT
-      gomes03|gomes|Gomes|2003|Cruzeiro|88|GOL
-      kaka02|kaka|Kaká|2002|São Paulo|90|MEI
-      fabiano04|lfabiano|Luis Fabiano|2004|São Paulo|91|ATA
-      tevez05|tevez|Tévez|2005|Corinthians|93|ATA
-      mascherano05|masche|Mascherano|2005|Corinthians|90|VOL
-      nilmar05|nilmar|Nilmar|2005|Corinthians|89|ATA
-      rcarvalho06|rcarvalho|Ricardo Carvalho|2006|Chelsea|92|ZAG
-    `.trim().split('\n').map(l => l.trim()).filter(l => l).map(line => {
-      const [id, baseId, name, year, team, ovr, pos] = line.split('|');
-      return { id, baseId, name, year: parseInt(year), team, overall: parseInt(ovr), pos };
-    });
+    // --- DATABASE NATIVA SEGURA ---
+    const PLAYER_DATABASE = [
+      { id: 'ceni05', baseId: 'ceni', name: 'Rogério Ceni', year: 2005, team: 'São Paulo', overall: 94, pos: 'GOL' },
+      { id: 'marcos99', baseId: 'marcos', name: 'São Marcos', year: 1999, team: 'Palmeiras', overall: 94, pos: 'GOL' },
+      { id: 'cassio12', baseId: 'cassio', name: 'Cássio', year: 2012, team: 'Corinthians', overall: 92, pos: 'GOL' },
+      { id: 'dida99', baseId: 'dida', name: 'Dida', year: 1999, team: 'Corinthians', overall: 93, pos: 'GOL' },
+      
+      { id: 'cafu93', baseId: 'cafu', name: 'Cafu', year: 1993, team: 'São Paulo', overall: 94, pos: 'LAT' },
+      { id: 'rcarlos10', baseId: 'rcarlos', name: 'Roberto Carlos', year: 2010, team: 'Corinthians', overall: 89, pos: 'LAT' },
+      { id: 'marcelo23', baseId: 'marcelo', name: 'Marcelo', year: 2023, team: 'Fluminense', overall: 88, pos: 'LAT' },
+      { id: 'fagner17', baseId: 'fagner', name: 'Fagner', year: 2017, team: 'Corinthians', overall: 88, pos: 'LAT' },
+
+      { id: 'aldair95', baseId: 'aldair', name: 'Aldair', year: 1995, team: 'Roma', overall: 93, pos: 'ZAG' },
+      { id: 'gamarra98', baseId: 'gamarra', name: 'Gamarra', year: 1998, team: 'Corinthians', overall: 93, pos: 'ZAG' },
+      { id: 'lugano05', baseId: 'lugano', name: 'Lugano', year: 2005, team: 'São Paulo', overall: 91, pos: 'ZAG' },
+      { id: 'gomez20', baseId: 'gomez', name: 'Gustavo Gómez', year: 2020, team: 'Palmeiras', overall: 91, pos: 'ZAG' },
+      { id: 'dede13', baseId: 'dede', name: 'Dedé', year: 2013, team: 'Cruzeiro', overall: 90, pos: 'ZAG' },
+
+      { id: 'msilva94', baseId: 'msilva', name: 'Mauro Silva', year: 1994, team: 'Bragantino', overall: 92, pos: 'VOL' },
+      { id: 'vampeta99', baseId: 'vampeta', name: 'Vampeta', year: 1999, team: 'Corinthians', overall: 90, pos: 'VOL' },
+      { id: 'mineiro05', baseId: 'mineiro', name: 'Mineiro', year: 2005, team: 'São Paulo', overall: 90, pos: 'VOL' },
+      { id: 'paulinho12', baseId: 'paulinho', name: 'Paulinho', year: 2012, team: 'Corinthians', overall: 91, pos: 'VOL' },
+      
+      { id: 'r10_11', baseId: 'r10', name: 'Ronaldinho', year: 2011, team: 'Flamengo', overall: 92, pos: 'MEI' },
+      { id: 'r10_13', baseId: 'r10', name: 'Ronaldinho', year: 2013, team: 'Atlético-MG', overall: 94, pos: 'MEI' },
+      { id: 'alex03', baseId: 'alex', name: 'Alex', year: 2003, team: 'Cruzeiro', overall: 95, pos: 'MEI' },
+      { id: 'arra19', baseId: 'arrascaeta', name: 'Arrascaeta', year: 2019, team: 'Flamengo', overall: 91, pos: 'MEI' },
+      { id: 'kaka02', baseId: 'kaka', name: 'Kaká', year: 2002, team: 'São Paulo', overall: 90, pos: 'MEI' },
+
+      { id: 'ney11', baseId: 'neymar', name: 'Neymar Jr', year: 2011, team: 'Santos', overall: 96, pos: 'PON' },
+      { id: 'bh19', baseId: 'bh', name: 'Bruno Henrique', year: 2019, team: 'Flamengo', overall: 92, pos: 'PON' },
+      { id: 'dudu18', baseId: 'dudu', name: 'Dudu', year: 2018, team: 'Palmeiras', overall: 90, pos: 'PON' },
+      { id: 'vini17', baseId: 'vini', name: 'Vini Jr', year: 2017, team: 'Flamengo', overall: 81, pos: 'PON' },
+
+      { id: 'romario00', baseId: 'romario', name: 'Romário', year: 2000, team: 'Vasco', overall: 97, pos: 'ATA' },
+      { id: 'edmundo97', baseId: 'edmundo', name: 'Edmundo', year: 1997, team: 'Vasco', overall: 96, pos: 'ATA' },
+      { id: 'gabi19', baseId: 'gabigol', name: 'Gabigol', year: 2019, team: 'Flamengo', overall: 92, pos: 'ATA' },
+      { id: 'fred12', baseId: 'fred', name: 'Fred', year: 2012, team: 'Fluminense', overall: 91, pos: 'ATA' },
+      { id: 'adri09', baseId: 'adriano', name: 'Adriano Imp.', year: 2009, team: 'Flamengo', overall: 92, pos: 'ATA' }
+    ];
 
     const FORMATIONS = {
       '4-3-3': ['GOL', 'LAT', 'ZAG', 'ZAG', 'LAT', 'VOL', 'MEI', 'MEI', 'PON', 'ATA', 'PON'],
@@ -220,7 +142,9 @@
       '4-2-3-1': ['GOL', 'LAT', 'ZAG', 'ZAG', 'LAT', 'VOL', 'VOL', 'MEI', 'PON', 'PON', 'ATA']
     };
 
-    // Componente de Carta Parallax
+    const BOT_NAMES = ["Bot Íbis", "Bot Tabajara", "Bot Genérico"];
+
+    // --- COMPONENTE CARTA 3D ---
     const PlayerCard = ({ player, onClick, hidden = false }) => {
       if (!player) return <div className="w-32 h-48 border-2 border-dashed border-white/20 rounded-xl bg-black/30"></div>;
       let rarity = 'from-orange-700 to-orange-900 border-orange-600 text-orange-100';
@@ -246,7 +170,7 @@
       );
     };
 
-    // --- ENGINE DE PARTIDA (CLIENT-SIDE PLAYBACK) ---
+    // --- COMPONENTE TRANSMISSÃO AO VIVO (30 SEGUNDOS FLUIDOS) ---
     const MatchViewer = ({ match }) => {
       const [localMin, setLocalMin] = useState(0);
       const [events, setEvents] = useState([]);
@@ -254,12 +178,10 @@
 
       useEffect(() => {
         if (!match || !match.played) return;
-        
-        // 30 segundos = 90 min (333ms por min)
-        const msPerMin = 333;
-        
-        // Play Whistle at start
         if(Date.now() - match.startTime < 1000) SFX.whistle();
+
+        // 30 segundos exatos por partida (333ms por minuto de jogo)
+        const msPerMin = 333; 
 
         const timer = setInterval(() => {
           const elapsed = Date.now() - match.startTime;
@@ -268,9 +190,8 @@
           setLocalMin(min);
 
           const currentEvents = match.events.filter(e => e.minute <= min);
-          setEvents(currentEvents.reverse()); // Mais recentes no topo
+          setEvents(currentEvents.reverse());
 
-          // Trigger Sound for new goals exactly when they happen
           const newGoals = match.events.filter(e => e.minute === min && e.type === 'goal');
           if(newGoals.length > 0) SFX.goal();
 
@@ -327,20 +248,16 @@
     function App() {
       const [user, setUser] = useState(null);
       const [playerName, setPlayerName] = useState('');
-      const [appState, setAppState] = useState('INIT'); // INIT, MENU, LOBBY, DRAFT_SETUP, DRAFTING, TOURNAMENT
+      const [appState, setAppState] = useState('INIT'); 
       const [roomData, setRoomData] = useState(null);
       const [roomId, setRoomId] = useState('');
       const [error, setError] = useState('');
       
-      // Setup Room Config
-      const [gameMode, setGameMode] = useState('eliminatoria'); // eliminatoria, liga, x1
-
-      // Draft State Local
       const [myFormation, setMyFormation] = useState('4-3-3');
-      const [draftStep, setDraftStep] = useState(0); // 0 a 10 (11 posições)
+      const [draftStep, setDraftStep] = useState(0); 
       const [draftOptions, setDraftOptions] = useState([]);
       const [myTeam, setMyTeam] = useState([]);
-      const seenIds = useRef(new Set()); // Memória para não repetir cartas no pack
+      const seenIds = useRef(new Set()); 
 
       useEffect(() => {
         auth.onAuthStateChanged(u => {
@@ -357,9 +274,7 @@
             const data = snap.val();
             setRoomData(data);
             
-            // State Machine transitions based on DB Status
             if(data.status === 'draft_setup' && appState === 'LOBBY') setAppState('DRAFT_SETUP');
-            if(data.status === 'drafting' && appState === 'DRAFT_SETUP') setAppState('DRAFTING');
             if(data.status === 'tournament' && appState !== 'TOURNAMENT') setAppState('TOURNAMENT');
           } else {
             setAppState('MENU');
@@ -383,7 +298,7 @@
         if(snap.exists()) return setError("Sala já existe");
 
         await roomRef.set({
-          hostUid: user.uid, status: 'lobby', mode: gameMode, stage: 0,
+          hostUid: user.uid, status: 'lobby', stage: 0,
           players: { [user.uid]: { name: playerName, team: [], overall: 0, isReady: false, isBot: false } }
         });
         setAppState('LOBBY');
@@ -402,26 +317,29 @@
         setAppState('LOBBY');
       };
 
-      // --- DRAFT LOGIC ---
-      const confirmFormation = () => {
-        SFX.click();
-        setAppState('DRAFTING');
-        pullPacks(0); // Puxa pack pro primeiro slot da formação
-      };
-
+      // --- ENGENHARIA DE SEGURANÇA: FALLBACK DO DRAFT ---
       const pullPacks = (step) => {
         const requiredPos = FORMATIONS[myFormation][step];
         const pool = PLAYER_DATABASE.filter(p => p.pos === requiredPos && !seenIds.current.has(p.baseId));
         
-        // Se a pool secar (muito improvável, mas previne crash), puxa qualquer um que não foi visto
         let options = pool.sort(() => 0.5 - Math.random()).slice(0, 3);
-        if(options.length < 3) {
-           const genericPool = PLAYER_DATABASE.filter(p => !seenIds.current.has(p.baseId)).sort(() => 0.5 - Math.random());
-           options = [...options, ...genericPool.slice(0, 3 - options.length)];
+        
+        // SAFETY NET: Se faltarem jogadores na Database, cria Lendas Genéricas para evitar Crash!
+        while (options.length < 3) {
+           const mockId = `mock_${requiredPos}_${Math.random()}`;
+           options.push({
+             id: mockId, baseId: mockId, name: `Talento da Base`, year: 2024, team: 'Canteiro', overall: 75 + Math.floor(Math.random()*10), pos: requiredPos
+           });
         }
 
         options.forEach(p => seenIds.current.add(p.baseId));
         setDraftOptions(options);
+      };
+
+      const confirmFormation = () => {
+        SFX.click();
+        setAppState('DRAFTING');
+        pullPacks(0); 
       };
 
       const pickPlayer = async (player) => {
@@ -433,7 +351,6 @@
           setDraftStep(prev => prev + 1);
           pullPacks(draftStep + 1);
         } else {
-          // Terminou o Draft!
           setDraftOptions([]);
           const avgOvr = Math.round(newTeam.reduce((acc, p) => acc + p.overall, 0) / 11);
           await db.ref(`games/${APP_ID}/${roomId}/players/${user.uid}`).update({
@@ -442,78 +359,45 @@
         }
       };
 
-      // --- MATCH ENGINE & TOURNAMENT MATH ---
       const startTournament = async () => {
         SFX.click();
         const players = Object.entries(roomData.players).map(([uid, p]) => ({uid, ...p}));
         
-        let targetSize = roomData.mode === 'x1' ? 2 : players.length > 4 ? 8 : 4;
+        let targetSize = players.length > 4 ? 8 : 4;
         let bracketPlayers = [...players];
         
         let b = 0;
         while(bracketPlayers.length < targetSize) {
-          bracketPlayers.push({ uid: `bot_${b}`, name: BOT_NAMES[b%4], overall: 70 + Math.floor(Math.random()*15), isBot: true });
+          bracketPlayers.push({ uid: `bot_${b}`, name: BOT_NAMES[b%3], overall: 70 + Math.floor(Math.random()*15), isBot: true });
           b++;
         }
         bracketPlayers.sort(() => 0.5 - Math.random());
 
-        if (roomData.mode === 'pontos_corridos') {
-          // Round Robin Gen (Simples)
-          let matches = [];
-          for(let i=0; i<bracketPlayers.length; i++) {
-            for(let j=i+1; j<bracketPlayers.length; j++) {
-              matches.push({ p1: bracketPlayers[i], p2: bracketPlayers[j], played: false, events: [] });
-            }
-          }
-          matches.sort(() => 0.5 - Math.random()); // Mistura as rodadas
-          
-          let table = {};
-          bracketPlayers.forEach(p => table[p.uid] = { name: p.name, pts:0, w:0, d:0, l:0, gf:0, ga:0, gd:0 });
-
-          await db.ref(`games/${APP_ID}/${roomId}`).update({ status: 'tournament', mode: 'pontos_corridos', matches, table, currentMatchIndex: 0 });
-        } else {
-          // Eliminatoria / X1
-          let matches = [];
-          for(let i=0; i<targetSize; i+=2) {
-             matches.push({ p1: bracketPlayers[i], p2: bracketPlayers[i+1], played: false, events: [] });
-          }
-          let stageName = targetSize === 8 ? 'quarters' : targetSize === 4 ? 'semis' : 'final';
-          await db.ref(`games/${APP_ID}/${roomId}`).update({ status: 'tournament', stage: targetSize === 8 ? 1 : targetSize === 4 ? 2 : 3, [`bracket/${stageName}`]: matches });
+        let matches = [];
+        for(let i=0; i<targetSize; i+=2) {
+           matches.push({ p1: bracketPlayers[i], p2: bracketPlayers[i+1], played: false, events: [] });
         }
+        let stageName = targetSize === 8 ? 'quarters' : 'semis';
+        await db.ref(`games/${APP_ID}/${roomId}`).update({ status: 'tournament', stage: targetSize === 8 ? 1 : 2, [`bracket/${stageName}`]: matches });
       };
 
       const simulateMatches = async () => {
         SFX.click();
-        
-        // Simulação Híbrida: O Host roda a matemática instantaneamente e joga pro banco.
-        // Os clientes leem os eventos usando o startTime para animar suavemente (Playback).
         const startTime = Date.now() + 1000;
-        
-        let matchesToSim = [];
-        let dbPath = '';
-
-        if(roomData.mode === 'pontos_corridos') {
-           // Simula apenas 1 partida por vez no painel principal
-           matchesToSim = [roomData.matches[roomData.currentMatchIndex]];
-           dbPath = `matches/${roomData.currentMatchIndex}`;
-        } else {
-           const stageKey = roomData.stage === 1 ? 'quarters' : roomData.stage === 2 ? 'semis' : 'final';
-           matchesToSim = roomData.bracket[stageKey];
-           dbPath = `bracket/${stageKey}`;
-        }
+        const stageKey = roomData.stage === 1 ? 'quarters' : roomData.stage === 2 ? 'semis' : 'final';
+        const matchesToSim = roomData.bracket[stageKey];
 
         const simulatedMatches = matchesToSim.map(match => {
            let events = [];
            let s1=0, s2=0;
            
-           // Fator Zebra Extremo (Variância Oculta de Jogo da Vida)
-           const ovr1 = match.p1.overall + (Math.random() * 40 - 20); // -20 a +20
+           // FATOR ZEBRA APRIMORADO (+- 20 OVR)
+           const ovr1 = match.p1.overall + (Math.random() * 40 - 20); 
            const ovr2 = match.p2.overall + (Math.random() * 40 - 20);
-           const prob1 = Math.max(0.2, Math.min(0.8, ovr1 / (ovr1 + ovr2))); // Nunca < 20%
+           const prob1 = Math.max(0.2, Math.min(0.8, ovr1 / (ovr1 + ovr2)));
 
-           // Simulador de 90 Minutos Físicos
            for(let min=1; min<=90; min++) {
-             if(Math.random() < 0.12) { // 12% chance de evento narrativo por min
+             if(Math.random() < 0.15) { // Muita ação!
                const isP1 = Math.random() < prob1;
                const att = isP1 ? match.p1 : match.p2;
                const def = isP1 ? match.p2 : match.p1;
@@ -532,51 +416,30 @@
              }
            }
 
-           if (roomData.mode !== 'pontos_corridos' && s1 === s2) {
+           if (s1 === s2) {
              events.push({ minute: 90, type: 'info', text: 'Empate! Decisão nos Pênaltis...' });
              if(Math.random() > 0.5) { s1++; events.push({ minute: 90, type: 'goal', teamId: match.p1.uid, text: `${match.p1.name} vence nos pênaltis!` }); }
              else { s2++; events.push({ minute: 90, type: 'goal', teamId: match.p2.uid, text: `${match.p2.name} vence nos pênaltis!` }); }
            }
            
            events.push({ minute: 90, type: 'info', text: 'Fim de Jogo.' });
-           return { ...match, startTime, played: true, events, s1, s2, winner: s1>s2 ? match.p1 : s1<s2 ? match.p2 : null };
+           return { ...match, startTime, played: true, events, s1, s2, winner: s1>s2 ? match.p1 : match.p2 };
         });
 
-        if (roomData.mode === 'pontos_corridos') {
-          await db.ref(`games/${APP_ID}/${roomId}/${dbPath}`).set(simulatedMatches[0]);
-          
-          // Calcular nova tabela ao final dos 30s
-          setTimeout(async () => {
-             const m = simulatedMatches[0];
-             const snap = await db.ref(`games/${APP_ID}/${roomId}/table`).get();
-             let table = snap.val();
-             
-             table[m.p1.uid].gf += m.s1; table[m.p1.uid].ga += m.s2; table[m.p1.uid].gd = table[m.p1.uid].gf - table[m.p1.uid].ga;
-             table[m.p2.uid].gf += m.s2; table[m.p2.uid].ga += m.s1; table[m.p2.uid].gd = table[m.p2.uid].gf - table[m.p2.uid].ga;
-             
-             if(m.s1 > m.s2) { table[m.p1.uid].w++; table[m.p1.uid].pts+=3; table[m.p2.uid].l++; }
-             else if(m.s1 < m.s2) { table[m.p2.uid].w++; table[m.p2.uid].pts+=3; table[m.p1.uid].l++; }
-             else { table[m.p1.uid].d++; table[m.p1.uid].pts+=1; table[m.p2.uid].d++; table[m.p2.uid].pts+=1; }
-             
-             await db.ref(`games/${APP_ID}/${roomId}`).update({ table, currentMatchIndex: roomData.currentMatchIndex + 1 });
-          }, 32000);
-
-        } else {
-          await db.ref(`games/${APP_ID}/${roomId}/${dbPath}`).set(simulatedMatches);
-          // Gerar próxima fase da copa
-          setTimeout(async () => {
-             const nextStage = roomData.stage === 1 ? 'semis' : roomData.stage === 2 ? 'final' : 'campeao';
-             if (nextStage !== 'campeao') {
-               let nextMatches = [];
-               for(let i=0; i<simulatedMatches.length; i+=2) {
-                 nextMatches.push({ p1: simulatedMatches[i].winner, p2: simulatedMatches[i+1].winner, played: false, events: [] });
-               }
-               await db.ref(`games/${APP_ID}/${roomId}`).update({ [`bracket/${nextStage}`]: nextMatches, stage: roomData.stage + 1 });
-             } else {
-               await db.ref(`games/${APP_ID}/${roomId}`).update({ stage: 4 });
+        await db.ref(`games/${APP_ID}/${roomId}/bracket/${stageKey}`).set(simulatedMatches);
+        
+        setTimeout(async () => {
+           const nextStage = roomData.stage === 1 ? 'semis' : roomData.stage === 2 ? 'final' : 'campeao';
+           if (nextStage !== 'campeao') {
+             let nextMatches = [];
+             for(let i=0; i<simulatedMatches.length; i+=2) {
+               nextMatches.push({ p1: simulatedMatches[i].winner, p2: simulatedMatches[i+1].winner, played: false, events: [] });
              }
-          }, 32000);
-        }
+             await db.ref(`games/${APP_ID}/${roomId}`).update({ [`bracket/${nextStage}`]: nextMatches, stage: roomData.stage + 1 });
+           } else {
+             await db.ref(`games/${APP_ID}/${roomId}`).update({ stage: 4 });
+           }
+        }, 32000);
       };
 
       // --- RENDERIZADORES ---
@@ -586,7 +449,7 @@
             <button onClick={initEngine} className="glass p-10 rounded-3xl flex flex-col items-center hover:scale-105 transition-all shadow-[0_0_50px_rgba(250,204,21,0.2)]">
               <i className="fa-solid fa-power-off text-6xl text-yellow-500 mb-6 animate-pulse"></i>
               <h1 className="text-4xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-600">INICIALIZAR ENGINE GOTY</h1>
-              <p className="text-gray-400 mt-2 font-bold uppercase tracking-widest text-xs">Habilita WebAudio e Aceleração GPU</p>
+              <p className="text-gray-400 mt-2 font-bold uppercase tracking-widest text-xs">Habilita WebAudio</p>
             </button>
           </div>
         );
@@ -603,14 +466,7 @@
               </div>
               <div className="space-y-4">
                 <input className="w-full p-4 bg-black/40 rounded-xl text-white outline-none border border-green-800 focus:border-green-400 transition" placeholder="Nome do Treinador" value={playerName} onChange={e=>setPlayerName(e.target.value)} />
-                <div className="flex gap-2">
-                  <input className="w-2/3 p-4 bg-black/40 rounded-xl text-white outline-none border border-green-800 uppercase focus:border-green-400 transition" placeholder="CÓDIGO SALA" value={roomId} onChange={e=>setRoomId(e.target.value.toUpperCase())} />
-                  <select className="w-1/3 p-4 bg-black/40 rounded-xl text-xs font-bold text-gray-300 outline-none border border-green-800" value={gameMode} onChange={e=>setGameMode(e.target.value)}>
-                    <option value="eliminatoria">Copa</option>
-                    <option value="pontos_corridos">Liga</option>
-                    <option value="x1">X1 Online</option>
-                  </select>
-                </div>
+                <input className="w-full p-4 bg-black/40 rounded-xl text-white outline-none border border-green-800 uppercase focus:border-green-400 transition" placeholder="CÓDIGO SALA" value={roomId} onChange={e=>setRoomId(e.target.value.toUpperCase())} />
                 {error && <div className="text-red-400 font-bold text-sm text-center bg-red-900/20 p-2 rounded">{error}</div>}
                 <div className="pt-4 space-y-3">
                   <button onClick={handleCreateRoom} className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 text-black font-black py-4 rounded-xl shadow-lg hover:scale-[1.02] transition"><i className="fa-solid fa-crown mr-2"></i> CRIAR SALA</button>
@@ -629,7 +485,6 @@
             <div className="glass p-8 rounded-3xl w-full max-w-4xl shadow-2xl animate-slide-up">
               <div className="flex justify-between items-center border-b border-green-800 pb-4 mb-8">
                 <h2 className="text-3xl font-black">SALA <span className="text-yellow-400">{roomId}</span></h2>
-                <span className="bg-green-900 px-4 py-1 rounded-full text-sm font-bold uppercase border border-green-600">Modo: {roomData?.mode}</span>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 {Object.entries(roomData?.players||{}).map(([uid, p]) => (
@@ -659,7 +514,7 @@
             <div className="glass p-10 rounded-3xl w-full max-w-xl text-center shadow-2xl border border-green-500">
               <i className="fa-solid fa-chess-board text-6xl text-green-400 mb-6"></i>
               <h1 className="text-4xl font-black mb-2">Prancheta Tática</h1>
-              <p className="text-gray-400 mb-8">Escolha como seu time vai jogar. As cartas que você tirar no pack dependem da sua formação.</p>
+              <p className="text-gray-400 mb-8">Escolha como seu time vai jogar.</p>
               
               <div className="grid grid-cols-2 gap-4 mb-8">
                 {Object.keys(FORMATIONS).map(form => (
@@ -682,7 +537,6 @@
 
         return (
           <div className="min-h-screen bg-green-950 flex flex-col lg:flex-row overflow-hidden">
-             {/* Esquerda: O Campo */}
              <div className="w-full lg:w-1/3 pitch-bg border-r border-green-800 p-6 flex flex-col">
                <h2 className="text-xl font-black mb-4 flex items-center justify-between">
                  <span><i className="fa-solid fa-shield text-yellow-400"></i> Seu Esquadrão</span>
@@ -705,7 +559,6 @@
                </div>
              </div>
 
-             {/* Direita: Pack Opening */}
              <div className="flex-1 flex items-center justify-center p-6 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] relative">
                 <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent z-0"></div>
                 
@@ -725,15 +578,6 @@
                     <i className="fa-solid fa-trophy text-8xl text-yellow-400 drop-shadow-[0_0_30px_rgba(250,204,21,0.6)] mb-6"></i>
                     <h2 className="text-4xl font-black mb-2">Equipe Fechada!</h2>
                     <p className="text-2xl text-green-400 font-bold mb-8">Overall Final: <span className="text-white">{myPlayerStatus?.overall}</span></p>
-                    
-                    <div className="bg-black/50 p-4 rounded-xl text-left mb-6 max-h-40 overflow-y-auto">
-                      {Object.values(roomData?.players||{}).map((p,i) => (
-                        <div key={i} className="flex justify-between items-center py-1 border-b border-white/5 last:border-0">
-                          <span>{p.name}</span>
-                          {p.isReady ? <i className="fa-solid fa-check text-green-500"></i> : <i className="fa-solid fa-spinner fa-spin text-yellow-500"></i>}
-                        </div>
-                      ))}
-                    </div>
 
                     {isHost && allReady ? (
                       <button onClick={startTournament} className="w-full bg-yellow-500 text-black font-black py-4 rounded-xl text-xl shadow-[0_0_20px_rgba(250,204,21,0.4)] hover:scale-105 transition">IR PARA O CAMPEONATO</button>
@@ -751,58 +595,6 @@
 
       if (appState === 'TOURNAMENT') {
         const isHost = roomData?.hostUid === user.uid;
-        
-        // Renderizador da Liga (Pontos Corridos)
-        if (roomData.mode === 'pontos_corridos') {
-          const tableArr = Object.entries(roomData.table||{}).map(([uid, d]) => ({uid, ...d})).sort((a,b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf);
-          const currentMatch = roomData.matches?.[roomData.currentMatchIndex];
-          const isLeagueOver = roomData.currentMatchIndex >= roomData.matches?.length;
-
-          return (
-            <div className="min-h-screen bg-green-950 p-4 md:p-8 text-white">
-               <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
-                  {/* Classificação */}
-                  <div className="lg:col-span-1 glass rounded-2xl p-6 h-fit border border-green-800">
-                    <h3 className="font-black text-xl mb-4 text-yellow-400 uppercase tracking-widest border-b border-green-800 pb-2">Tabela</h3>
-                    <div className="space-y-1">
-                      <div className="flex text-xs text-gray-500 font-bold uppercase px-2 mb-2"><span className="flex-1">Time</span><span className="w-6 text-center">P</span><span className="w-6 text-center">V</span><span className="w-6 text-center">SG</span></div>
-                      {tableArr.map((row, i) => (
-                        <div key={i} className={`flex items-center text-sm font-bold px-2 py-2 rounded ${i===0 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-black/30'}`}>
-                          <span className="w-4 text-gray-500">{i+1}</span>
-                          <span className="flex-1 truncate">{row.name}</span>
-                          <span className="w-6 text-center">{row.pts}</span>
-                          <span className="w-6 text-center text-gray-400">{row.w}</span>
-                          <span className="w-6 text-center text-gray-400">{row.gd}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Tela de Partida */}
-                  <div className="lg:col-span-2 flex flex-col">
-                     <div className="flex justify-between items-center mb-6 glass p-4 rounded-xl border border-green-800">
-                       <h2 className="text-xl font-black"><i className="fa-solid fa-tv text-green-400 mr-2"></i> Rodada {roomData.currentMatchIndex+1} de {roomData.matches?.length}</h2>
-                       {isHost && !isLeagueOver && (!currentMatch?.played) && (
-                         <button onClick={simulateMatches} className="bg-red-600 px-6 py-2 rounded font-black hover:bg-red-500 transition shadow-[0_0_15px_rgba(220,38,38,0.5)]">INICIAR PARTIDA</button>
-                       )}
-                     </div>
-
-                     {isLeagueOver ? (
-                       <div className="text-center glass p-12 rounded-3xl border border-yellow-500 flex-1 flex flex-col items-center justify-center">
-                         <i className="fa-solid fa-trophy text-[120px] text-yellow-400 mb-8 drop-shadow-[0_0_50px_rgba(250,204,21,0.6)] animate-float"></i>
-                         <h1 className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-600">{tableArr[0].name}</h1>
-                         <p className="text-2xl font-bold uppercase tracking-widest mt-4 text-gray-300">É o Campeão Brasileiro!</p>
-                       </div>
-                     ) : (
-                       <MatchViewer match={currentMatch} />
-                     )}
-                  </div>
-               </div>
-            </div>
-          )
-        }
-
-        // Renderizador Eliminatoria / X1
         const stageKey = roomData.stage === 1 ? 'quarters' : roomData.stage === 2 ? 'semis' : 'final';
         const activeMatches = roomData.bracket[stageKey] || [];
         const myMatch = activeMatches.find(m => m.p1.uid === user.uid || m.p2.uid === user.uid);
@@ -831,7 +623,6 @@
                     <h3 className="text-green-400 font-bold mb-4 uppercase text-xs tracking-widest">Placares (Spoilers Ocultos)</h3>
                     <div className="space-y-4">
                       {activeMatches.map((m, i) => {
-                         // Lógica de Anti-Spoiler: O placar só revela se o tempo de jogo passou de 30s.
                          const isMatchOver = m.played && (Date.now() - m.startTime > 30000);
                          return (
                           <div key={i} className="glass p-3 rounded-lg border border-green-800 flex flex-col justify-center shadow-lg relative overflow-hidden">
