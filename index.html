@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Brasfoot Draft Kings: GOTY</title>
+  <title>Brasfoot Draft Kings: GOTY 3D</title>
 
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -21,6 +21,9 @@
   <!-- Tone.js (Neural Audio Engine) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 
+  <!-- Three.js (WebGL 3D Engine) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
   <!-- Firebase Compat (RTDB) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
@@ -30,7 +33,7 @@
     tailwind.config = {
       theme: {
         extend: {
-          colors: { pitch: '#05180a', accent: '#ffcc00' },
+          colors: { pitch: '#020a04', accent: '#ffcc00' },
           animation: {
             'shake': 'shake 0.4s cubic-bezier(.36,.07,.19,.97) both',
             'flare': 'flare 1s ease-out forwards',
@@ -49,13 +52,14 @@
     }
   </script>
   <style>
-    body { background-color: #030a04; color: white; font-family: system-ui, -apple-system, sans-serif; overflow-x: hidden; user-select: none; }
-    .glass { background: rgba(5, 24, 10, 0.9); backdrop-filter: blur(20px); border: 1px solid rgba(74, 222, 128, 0.2); }
-    .pitch-bg { background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 40px 40px; box-shadow: inset 0 0 150px rgba(0,0,0,0.95); }
+    body { background-color: #020803; color: white; font-family: system-ui, -apple-system, sans-serif; overflow-x: hidden; user-select: none; }
+    .glass { background: rgba(2, 10, 4, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(74, 222, 128, 0.15); box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+    .pitch-bg { background-image: linear-gradient(rgba(74,222,128,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(74,222,128,0.03) 1px, transparent 1px); background-size: 30px 30px; box-shadow: inset 0 0 150px rgba(0,0,0,0.98); }
     .card-3d { transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-style: preserve-3d; }
-    .card-3d:hover { transform: scale(1.08) translateY(-15px) rotateX(15deg); box-shadow: 0 30px 60px rgba(0,0,0,0.8); z-index: 50; }
-    .card-flare { background: linear-gradient(135deg, rgba(255,255,255,0.8) 0%, transparent 50%); mix-blend-mode: overlay; pointer-events: none; }
-    .momentum-bar { transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+    .card-3d:hover { transform: scale(1.05) translateY(-10px) rotateX(10deg); box-shadow: 0 30px 50px rgba(0,0,0,0.9); z-index: 50; }
+    .card-flare { background: linear-gradient(135deg, rgba(255,255,255,0.6) 0%, transparent 50%); mix-blend-mode: overlay; pointer-events: none; }
+    .momentum-bar { transition: width 0.3s linear; }
+    canvas { display: block; width: 100%; height: 100%; outline: none; }
     ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #000; } ::-webkit-scrollbar-thumb { background: #166534; border-radius: 10px; }
   </style>
 </head>
@@ -63,9 +67,8 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useRef } = React;
+    const { useState, useEffect, useRef, useMemo } = React;
 
-    // --- AUDIO ENGINE ---
     const SFX = {
       ready: false, synth: null, kick: null, noise: null,
       init: async () => {
@@ -96,120 +99,84 @@
       }
     };
 
-    // --- FIREBASE SETUP ---
-    const myFirebaseConfig = {
+    firebase.initializeApp({
       apiKey: "AIzaSyBhFf89G1chtLnX73oNujjJTtuMMcqnQWQ",
       authDomain: "game-resenha.firebaseapp.com",
       projectId: "game-resenha",
       storageBucket: "game-resenha.firebasestorage.app",
       messagingSenderId: "270816875",
       appId: "1:270816875:web:b5a11827a82263984c432e"
-    };
-
-    const firebaseConfig = typeof __firebase_config !== 'undefined' && Object.keys(__firebase_config).length > 2 
-      ? JSON.parse(__firebase_config) 
-      : myFirebaseConfig;
-
-    if (!firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
-    }
+    });
     const auth = firebase.auth();
     const db = firebase.database();
-    const APP_ID = 'draft-kings-goty-v3';
+    const APP_ID = 'draft-kings-goty-v4-3d';
 
-    // --- DATABASE SÓLIDA ---
+    // Banco de Dados Monstruoso e Nativo
     const PLAYER_DATABASE = [
-       // Goleiros
-       { id: 'ceni_05', baseId: 'ceni', name: 'Rogério Ceni', year: 2005, team: 'São Paulo', overall: 94, pos: 'GOL' },
-       { id: 'marcos_99', baseId: 'marcos', name: 'Marcos', year: 1999, team: 'Palmeiras', overall: 93, pos: 'GOL' },
-       { id: 'dida_99', baseId: 'dida', name: 'Dida', year: 1999, team: 'Corinthians', overall: 93, pos: 'GOL' },
-       { id: 'cassio_12', baseId: 'cassio', name: 'Cássio', year: 2012, team: 'Corinthians', overall: 92, pos: 'GOL' },
-       { id: 'taffarel_98', baseId: 'taffarel', name: 'Taffarel', year: 1998, team: 'Atlético-MG', overall: 92, pos: 'GOL' },
-       { id: 'weverton_20', baseId: 'weverton', name: 'Weverton', year: 2020, team: 'Palmeiras', overall: 89, pos: 'GOL' },
-       { id: 'victor_13', baseId: 'victor', name: 'Victor', year: 2013, team: 'Atlético-MG', overall: 89, pos: 'GOL' },
-       { id: 'fabio_13', baseId: 'fabio', name: 'Fábio', year: 2013, team: 'Cruzeiro', overall: 90, pos: 'GOL' },
-       { id: 'prass_15', baseId: 'prass', name: 'Fernando Prass', year: 2015, team: 'Palmeiras', overall: 88, pos: 'GOL' },
-       { id: 'grohe_17', baseId: 'grohe', name: 'Marcelo Grohe', year: 2017, team: 'Grêmio', overall: 89, pos: 'GOL' },
-       
-       // Laterais
-       { id: 'rcarlos_10', baseId: 'rcarlos', name: 'Roberto Carlos', year: 2010, team: 'Corinthians', overall: 93, pos: 'LAT' },
-       { id: 'cafu_93', baseId: 'cafu', name: 'Cafu', year: 1993, team: 'São Paulo', overall: 94, pos: 'LAT' },
-       { id: 'marcelo_23', baseId: 'marcelo', name: 'Marcelo', year: 2023, team: 'Fluminense', overall: 88, pos: 'LAT' },
-       { id: 'fagner_17', baseId: 'fagner', name: 'Fagner', year: 2017, team: 'Corinthians', overall: 88, pos: 'LAT' },
-       { id: 'arana_21', baseId: 'arana', name: 'Guilherme Arana', year: 2021, team: 'Atlético-MG', overall: 87, pos: 'LAT' },
-       { id: 'leo_moura_13', baseId: 'leomoura', name: 'Léo Moura', year: 2013, team: 'Flamengo', overall: 87, pos: 'LAT' },
-       { id: 'filipe_luis_19', baseId: 'filipeluis', name: 'Filipe Luís', year: 2019, team: 'Flamengo', overall: 89, pos: 'LAT' },
-       { id: 'apodi_15', baseId: 'apodi', name: 'Apodi', year: 2015, team: 'Chapecoense', overall: 80, pos: 'LAT' },
-       { id: 'marcos_rocha_19', baseId: 'mrocha', name: 'Marcos Rocha', year: 2019, team: 'Palmeiras', overall: 87, pos: 'LAT' },
-       
-       // Zagueiros
-       { id: 'gamarra_98', baseId: 'gamarra', name: 'Gamarra', year: 1998, team: 'Corinthians', overall: 94, pos: 'ZAG' },
-       { id: 'aldair_95', baseId: 'aldair', name: 'Aldair', year: 1995, team: 'Roma', overall: 93, pos: 'ZAG' },
-       { id: 'lugano_05', baseId: 'lugano', name: 'Lugano', year: 2005, team: 'São Paulo', overall: 92, pos: 'ZAG' },
-       { id: 'gomez_20', baseId: 'gomez', name: 'Gustavo Gómez', year: 2020, team: 'Palmeiras', overall: 91, pos: 'ZAG' },
-       { id: 'tsilva_08', baseId: 'tsilva', name: 'Thiago Silva', year: 2008, team: 'Fluminense', overall: 92, pos: 'ZAG' },
-       { id: 'geromel_17', baseId: 'geromel', name: 'Geromel', year: 2017, team: 'Grêmio', overall: 91, pos: 'ZAG' },
-       { id: 'kannemann_17', baseId: 'kannemann', name: 'Kannemann', year: 2017, team: 'Grêmio', overall: 89, pos: 'ZAG' },
-       { id: 'dede_13', baseId: 'dede', name: 'Dedé', year: 2013, team: 'Cruzeiro', overall: 90, pos: 'ZAG' },
-       { id: 'miranda_08', baseId: 'miranda', name: 'Miranda', year: 2008, team: 'São Paulo', overall: 91, pos: 'ZAG' },
-       { id: 'rever_13', baseId: 'rever', name: 'Réver', year: 2013, team: 'Atlético-MG', overall: 88, pos: 'ZAG' },
-       { id: 'gil_15', baseId: 'gil', name: 'Gil', year: 2015, team: 'Corinthians', overall: 89, pos: 'ZAG' },
-       { id: 'balbuena_17', baseId: 'balbuena', name: 'Balbuena', year: 2017, team: 'Corinthians', overall: 88, pos: 'ZAG' },
-
-       // Volantes
-       { id: 'msilva_94', baseId: 'msilva', name: 'Mauro Silva', year: 1994, team: 'Bragantino', overall: 93, pos: 'VOL' },
-       { id: 'dunga_99', baseId: 'dunga', name: 'Dunga', year: 1999, team: 'Internacional', overall: 91, pos: 'VOL' },
-       { id: 'vampeta_99', baseId: 'vampeta', name: 'Vampeta', year: 1999, team: 'Corinthians', overall: 90, pos: 'VOL' },
-       { id: 'rincon_99', baseId: 'rincon', name: 'Rincón', year: 1999, team: 'Corinthians', overall: 91, pos: 'VOL' },
-       { id: 'mineiro_05', baseId: 'mineiro', name: 'Mineiro', year: 2005, team: 'São Paulo', overall: 90, pos: 'VOL' },
-       { id: 'paulinho_12', baseId: 'paulinho', name: 'Paulinho', year: 2012, team: 'Corinthians', overall: 91, pos: 'VOL' },
-       { id: 'felipe_melo_18', baseId: 'fmelo', name: 'Felipe Melo', year: 2018, team: 'Palmeiras', overall: 87, pos: 'VOL' },
-       { id: 'tche_tche_16', baseId: 'tche', name: 'Tchê Tchê', year: 2016, team: 'Palmeiras', overall: 85, pos: 'VOL' },
-       { id: 'ralf_15', baseId: 'ralf', name: 'Ralf', year: 2015, team: 'Corinthians', overall: 88, pos: 'VOL' },
-       { id: 'danilo_21', baseId: 'danilo', name: 'Danilo', year: 2021, team: 'Palmeiras', overall: 88, pos: 'VOL' },
-
-       // Meias
-       { id: 'zico_81', baseId: 'zico', name: 'Zico', year: 1981, team: 'Flamengo', overall: 98, pos: 'MEI' },
-       { id: 'r10_11', baseId: 'r10', name: 'Ronaldinho', year: 2011, team: 'Flamengo', overall: 93, pos: 'MEI' },
-       { id: 'r10_13', baseId: 'r10', name: 'Ronaldinho', year: 2013, team: 'Atlético-MG', overall: 94, pos: 'MEI' },
-       { id: 'kaka_02', baseId: 'kaka', name: 'Kaká', year: 2002, team: 'São Paulo', overall: 92, pos: 'MEI' },
-       { id: 'alex_03', baseId: 'alex', name: 'Alex', year: 2003, team: 'Cruzeiro', overall: 95, pos: 'MEI' },
-       { id: 'djalminha_96', baseId: 'djalminha', name: 'Djalminha', year: 1996, team: 'Palmeiras', overall: 92, pos: 'MEI' },
-       { id: 'arrascaeta_19', baseId: 'arrasca', name: 'Arrascaeta', year: 2019, team: 'Flamengo', overall: 92, pos: 'MEI' },
-       { id: 'everton_19', baseId: 'everton', name: 'Éverton Ribeiro', year: 2019, team: 'Flamengo', overall: 90, pos: 'MEI' },
-       { id: 'conca_10', baseId: 'conca', name: 'Conca', year: 2010, team: 'Fluminense', overall: 92, pos: 'MEI' },
-       { id: 'petkovic_09', baseId: 'pet', name: 'Petkovic', year: 2009, team: 'Flamengo', overall: 91, pos: 'MEI' },
-       { id: 'ganso_10', baseId: 'ganso', name: 'PH Ganso', year: 2010, team: 'Santos', overall: 91, pos: 'MEI' },
-       { id: 'renato_15', baseId: 'renato', name: 'Renato Augusto', year: 2015, team: 'Corinthians', overall: 91, pos: 'MEI' },
-       { id: 'dale_10', baseId: 'dale', name: "D'Alessandro", year: 2010, team: 'Internacional', overall: 91, pos: 'MEI' },
-
-       // Pontas
-       { id: 'neymar_11', baseId: 'neymar', name: 'Neymar Jr', year: 2011, team: 'Santos', overall: 96, pos: 'PON' },
-       { id: 'bh_19', baseId: 'bh', name: 'Bruno Henrique', year: 2019, team: 'Flamengo', overall: 92, pos: 'PON' },
-       { id: 'dudu_18', baseId: 'dudu', name: 'Dudu', year: 2018, team: 'Palmeiras', overall: 90, pos: 'PON' },
-       { id: 'vini_17', baseId: 'vini', name: 'Vini Jr', year: 2017, team: 'Flamengo', overall: 82, pos: 'PON' },
-       { id: 'estevao_24', baseId: 'estevao', name: 'Estevão', year: 2024, team: 'Palmeiras', overall: 81, pos: 'PON' },
-       { id: 'lucas_12', baseId: 'lucas', name: 'Lucas Moura', year: 2012, team: 'São Paulo', overall: 89, pos: 'PON' },
-       { id: 'cebolinha_17', baseId: 'cebolinha', name: 'Everton Cebolinha', year: 2017, team: 'Grêmio', overall: 89, pos: 'PON' },
-       { id: 'rony_21', baseId: 'rony', name: 'Rony', year: 2021, team: 'Palmeiras', overall: 87, pos: 'PON' },
-
-       // Atacantes
-       { id: 'pele_70', baseId: 'pele', name: 'Pelé', year: 1970, team: 'Santos', overall: 99, pos: 'ATA' },
-       { id: 'romario_00', baseId: 'romario', name: 'Romário', year: 2000, team: 'Vasco', overall: 97, pos: 'ATA' },
-       { id: 'ronaldo_96', baseId: 'ronaldo', name: 'Ronaldo', year: 1996, team: 'Cruzeiro', overall: 97, pos: 'ATA' },
-       { id: 'edmundo_97', baseId: 'edmundo', name: 'Edmundo', year: 1997, team: 'Vasco', overall: 96, pos: 'ATA' },
-       { id: 'adriano_09', baseId: 'adriano', name: 'Adriano Imp.', year: 2009, team: 'Flamengo', overall: 93, pos: 'ATA' },
-       { id: 'gabigol_19', baseId: 'gabigol', name: 'Gabigol', year: 2019, team: 'Flamengo', overall: 92, pos: 'ATA' },
-       { id: 'luis_fabiano_12', baseId: 'lfabiano', name: 'Luis Fabiano', year: 2012, team: 'São Paulo', overall: 89, pos: 'ATA' },
-       { id: 'hulk_21', baseId: 'hulk', name: 'Hulk', year: 2021, team: 'Atlético-MG', overall: 91, pos: 'ATA' },
-       { id: 'fernandao_06', baseId: 'fernandao', name: 'Fernandão', year: 2006, team: 'Internacional', overall: 90, pos: 'ATA' },
-       { id: 'fred_12', baseId: 'fred', name: 'Fred', year: 2012, team: 'Fluminense', overall: 91, pos: 'ATA' },
-       { id: 'tardelli_13', baseId: 'tardelli', name: 'Diego Tardelli', year: 2013, team: 'Atlético-MG', overall: 89, pos: 'ATA' },
-       { id: 'robinho_02', baseId: 'robinho', name: 'Robinho', year: 2002, team: 'Santos', overall: 90, pos: 'ATA' },
-       { id: 'ribamar_19', baseId: 'ribamar', name: 'Ribamar', year: 2019, team: 'Vasco', overall: 72, pos: 'ATA' },
-       { id: 'pedro_22', baseId: 'pedro', name: 'Pedro', year: 2022, team: 'Flamengo', overall: 89, pos: 'ATA' },
-       { id: 'cano_22', baseId: 'cano', name: 'Germán Cano', year: 2022, team: 'Fluminense', overall: 89, pos: 'ATA' },
-       { id: 'endrick_23', baseId: 'endrick', name: 'Endrick', year: 2023, team: 'Palmeiras', overall: 85, pos: 'ATA' }
+      { id: 'pele_70', baseId: 'pele', name: 'Pelé', year: 1970, team: 'Santos', overall: 99, pos: 'ATA' },
+      { id: 'zico_81', baseId: 'zico', name: 'Zico', year: 1981, team: 'Flamengo', overall: 98, pos: 'MEI' },
+      { id: 'romario_00', baseId: 'romario', name: 'Romário', year: 2000, team: 'Vasco', overall: 97, pos: 'ATA' },
+      { id: 'ronaldo_96', baseId: 'ronaldo', name: 'Ronaldo Fenômeno', year: 1996, team: 'Cruzeiro', overall: 97, pos: 'ATA' },
+      { id: 'neymar_11', baseId: 'neymar', name: 'Neymar Jr', year: 2011, team: 'Santos', overall: 96, pos: 'PON' },
+      { id: 'rcarlos_10', baseId: 'rcarlos', name: 'Roberto Carlos', year: 2010, team: 'Corinthians', overall: 93, pos: 'LAT' },
+      { id: 'cafu_93', baseId: 'cafu', name: 'Cafu', year: 1993, team: 'São Paulo', overall: 94, pos: 'LAT' },
+      { id: 'ceni_05', baseId: 'ceni', name: 'Rogério Ceni', year: 2005, team: 'São Paulo', overall: 94, pos: 'GOL' },
+      { id: 'dida_99', baseId: 'dida', name: 'Dida', year: 1999, team: 'Corinthians', overall: 94, pos: 'GOL' },
+      { id: 'taffarel_98', baseId: 'taffarel', name: 'Taffarel', year: 1998, team: 'Atlético-MG', overall: 93, pos: 'GOL' },
+      { id: 'marcos_99', baseId: 'marcos', name: 'São Marcos', year: 1999, team: 'Palmeiras', overall: 94, pos: 'GOL' },
+      { id: 'cassio_12', baseId: 'cassio', name: 'Cássio', year: 2012, team: 'Corinthians', overall: 92, pos: 'GOL' },
+      { id: 'gamarra_98', baseId: 'gamarra', name: 'Gamarra', year: 1998, team: 'Corinthians', overall: 94, pos: 'ZAG' },
+      { id: 'aldair_95', baseId: 'aldair', name: 'Aldair', year: 1995, team: 'Roma', overall: 93, pos: 'ZAG' },
+      { id: 'lugano_05', baseId: 'lugano', name: 'Lugano', year: 2005, team: 'São Paulo', overall: 92, pos: 'ZAG' },
+      { id: 'gomez_20', baseId: 'gomez', name: 'Gustavo Gómez', year: 2020, team: 'Palmeiras', overall: 91, pos: 'ZAG' },
+      { id: 'tsilva_08', baseId: 'tsilva', name: 'Thiago Silva', year: 2008, team: 'Fluminense', overall: 92, pos: 'ZAG' },
+      { id: 'geromel_17', baseId: 'geromel', name: 'Geromel', year: 2017, team: 'Grêmio', overall: 91, pos: 'ZAG' },
+      { id: 'kannemann_17', baseId: 'kannemann', name: 'Kannemann', year: 2017, team: 'Grêmio', overall: 89, pos: 'ZAG' },
+      { id: 'msilva_94', baseId: 'msilva', name: 'Mauro Silva', year: 1994, team: 'Bragantino', overall: 93, pos: 'VOL' },
+      { id: 'dunga_99', baseId: 'dunga', name: 'Dunga', year: 1999, team: 'Inter', overall: 91, pos: 'VOL' },
+      { id: 'mineiro_05', baseId: 'mineiro', name: 'Mineiro', year: 2005, team: 'São Paulo', overall: 90, pos: 'VOL' },
+      { id: 'vampeta_99', baseId: 'vampeta', name: 'Vampeta', year: 1999, team: 'Corinthians', overall: 90, pos: 'VOL' },
+      { id: 'rincon_99', baseId: 'rincon', name: 'Rincón', year: 1999, team: 'Corinthians', overall: 91, pos: 'VOL' },
+      { id: 'kaka_02', baseId: 'kaka', name: 'Kaká', year: 2002, team: 'São Paulo', overall: 92, pos: 'MEI' },
+      { id: 'alex_03', baseId: 'alex', name: 'Alex', year: 2003, team: 'Cruzeiro', overall: 95, pos: 'MEI' },
+      { id: 'r10_11', baseId: 'r10', name: 'Ronaldinho', year: 2011, team: 'Flamengo', overall: 93, pos: 'MEI' },
+      { id: 'r10_13', baseId: 'r10', name: 'Ronaldinho', year: 2013, team: 'Atlético-MG', overall: 94, pos: 'MEI' },
+      { id: 'djalminha_96', baseId: 'djalminha', name: 'Djalminha', year: 1996, team: 'Palmeiras', overall: 92, pos: 'MEI' },
+      { id: 'arrasca_19', baseId: 'arrasca', name: 'Arrascaeta', year: 2019, team: 'Flamengo', overall: 92, pos: 'MEI' },
+      { id: 'everton_19', baseId: 'everton', name: 'Éverton Ribeiro', year: 2019, team: 'Flamengo', overall: 90, pos: 'MEI' },
+      { id: 'conca_10', baseId: 'conca', name: 'Conca', year: 2010, team: 'Fluminense', overall: 92, pos: 'MEI' },
+      { id: 'petkovic_09', baseId: 'petkovic', name: 'Petkovic', year: 2009, team: 'Flamengo', overall: 91, pos: 'MEI' },
+      { id: 'edmundo_97', baseId: 'edmundo', name: 'Edmundo', year: 1997, team: 'Vasco', overall: 96, pos: 'ATA' },
+      { id: 'adriano_09', baseId: 'adriano', name: 'Adriano Imp.', year: 2009, team: 'Flamengo', overall: 93, pos: 'ATA' },
+      { id: 'luis_fabiano_12', baseId: 'luis_fabiano', name: 'Luis Fabiano', year: 2012, team: 'São Paulo', overall: 89, pos: 'ATA' },
+      { id: 'bh_19', baseId: 'bh', name: 'Bruno Henrique', year: 2019, team: 'Flamengo', overall: 92, pos: 'PON' },
+      { id: 'gabigol_19', baseId: 'gabigol', name: 'Gabigol', year: 2019, team: 'Flamengo', overall: 92, pos: 'ATA' },
+      { id: 'dudu_18', baseId: 'dudu', name: 'Dudu', year: 2018, team: 'Palmeiras', overall: 90, pos: 'PON' },
+      { id: 'vini_17', baseId: 'vini', name: 'Vini Jr', year: 2017, team: 'Flamengo', overall: 82, pos: 'PON' },
+      { id: 'endrick_23', baseId: 'endrick', name: 'Endrick', year: 2023, team: 'Palmeiras', overall: 85, pos: 'ATA' },
+      { id: 'estevao_24', baseId: 'estevao', name: 'Estevão', year: 2024, team: 'Palmeiras', overall: 81, pos: 'PON' },
+      { id: 'hulk_21', baseId: 'hulk', name: 'Hulk', year: 2021, team: 'Atlético-MG', overall: 91, pos: 'ATA' },
+      { id: 'paulinho_12', baseId: 'paulinho', name: 'Paulinho', year: 2012, team: 'Corinthians', overall: 91, pos: 'VOL' },
+      { id: 'renato_15', baseId: 'renato', name: 'Renato Augusto', year: 2015, team: 'Corinthians', overall: 91, pos: 'MEI' },
+      { id: 'ganso_10', baseId: 'ganso', name: 'PH Ganso', year: 2010, team: 'Santos', overall: 91, pos: 'MEI' },
+      { id: 'dale_10', baseId: 'dale', name: "D'Alessandro", year: 2010, team: 'Inter', overall: 91, pos: 'MEI' },
+      { id: 'fernandao_06', baseId: 'fernandao', name: 'Fernandão', year: 2006, team: 'Inter', overall: 90, pos: 'ATA' },
+      { id: 'luan_17', baseId: 'luan', name: 'Luan', year: 2017, team: 'Grêmio', overall: 91, pos: 'MEI' },
+      { id: 'fred_12', baseId: 'fred', name: 'Fred', year: 2012, team: 'Fluminense', overall: 91, pos: 'ATA' },
+      { id: 'tardelli_13', baseId: 'tardelli', name: 'Diego Tardelli', year: 2013, team: 'Atlético-MG', overall: 89, pos: 'ATA' },
+      { id: 'marcelo_23', baseId: 'marcelo', name: 'Marcelo', year: 2023, team: 'Fluminense', overall: 88, pos: 'LAT' },
+      { id: 'fagner_17', baseId: 'fagner', name: 'Fagner', year: 2017, team: 'Corinthians', overall: 88, pos: 'LAT' },
+      { id: 'felipe_melo_18', baseId: 'felipe_melo', name: 'Felipe Melo', year: 2018, team: 'Palmeiras', overall: 87, pos: 'VOL' },
+      { id: 'dede_13', baseId: 'dede', name: 'Dedé', year: 2013, team: 'Cruzeiro', overall: 90, pos: 'ZAG' },
+      { id: 'miranda_08', baseId: 'miranda', name: 'Miranda', year: 2008, team: 'São Paulo', overall: 91, pos: 'ZAG' },
+      { id: 'lucas_m_12', baseId: 'lucas_m', name: 'Lucas Moura', year: 2012, team: 'São Paulo', overall: 89, pos: 'PON' },
+      { id: 'robinho_02', baseId: 'robinho', name: 'Robinho', year: 2002, team: 'Santos', overall: 90, pos: 'ATA' },
+      { id: 'apodi_15', baseId: 'apodi', name: 'Apodi', year: 2015, team: 'Chapecoense', overall: 78, pos: 'LAT' },
+      { id: 'ribamar_19', baseId: 'ribamar', name: 'Ribamar', year: 2019, team: 'Vasco', overall: 72, pos: 'ATA' },
+      { id: 'weverton_20', baseId: 'weverton', name: 'Weverton', year: 2020, team: 'Palmeiras', overall: 89, pos: 'GOL' },
+      { id: 'fabio_13', baseId: 'fabio', name: 'Fábio', year: 2013, team: 'Cruzeiro', overall: 90, pos: 'GOL' },
+      { id: 'pedro_22', baseId: 'pedro', name: 'Pedro', year: 2022, team: 'Flamengo', overall: 89, pos: 'ATA' },
+      { id: 'cano_22', baseId: 'cano', name: 'Germán Cano', year: 2022, team: 'Fluminense', overall: 89, pos: 'ATA' }
     ];
 
     const FORMATIONS = {
@@ -220,29 +187,24 @@
     };
 
     const TACTICS = {
-      'Kamikaze': { desc: 'Ataque total. Defesa exposta.', atkMod: 1.4, defMod: 0.7 },
+      'Kamikaze': { desc: 'Ataque total. Defesa exposta.', atkMod: 1.3, defMod: 0.7 },
       'Equilibrado': { desc: 'Posicionamento padrão.', atkMod: 1.0, defMod: 1.0 },
-      'Retranca': { desc: 'Ônibus na zaga. Foco em contra-ataques.', atkMod: 0.6, defMod: 1.4 }
+      'Retranca': { desc: 'Ônibus na zaga. Foco em contra-ataques.', atkMod: 0.7, defMod: 1.3 }
     };
 
-    const BOT_NAMES = ["Íbis SC", "Tabajara FC", "Bot Bagre", "Super Campeões", "Time do CPU"];
+    const BOT_NAMES = ["Íbis SC", "Tabajara FC", "Bot Bagre", "Super Campeões", "Time do CPU", "Galácticos FC", "Amigos do Neymar", "Resenha FC"];
 
-    // --- COMPONENTES UI ---
-    const PlayerCard = ({ player, onClick, hidden = false }) => {
+    //    const PlayerCard = ({ player, onClick, hidden = false }) => {
       if (!player) return <div className="w-40 h-56 border-2 border-dashed border-white/20 rounded-xl bg-black/40 flex items-center justify-center text-gray-600 font-bold"><i className="fa-solid fa-user-secret text-4xl"></i></div>;
       
-      let rarity = 'from-stone-600 to-stone-800 border-stone-500 text-stone-100'; // Comum
+      let rarity = 'from-stone-600 to-stone-800 border-stone-500 text-stone-100'; 
       let glow = '';
-      if (player.overall >= 85) { rarity = 'from-slate-300 to-slate-500 border-slate-300 text-black'; glow = 'shadow-[0_0_15px_rgba(255,255,255,0.3)]'; } // Prata
-      if (player.overall >= 90) { rarity = 'from-yellow-400 to-yellow-600 border-yellow-300 text-black'; glow = 'shadow-[0_0_25px_rgba(250,204,21,0.6)]'; } // Ouro
-      if (player.overall >= 95) { rarity = 'from-cyan-400 to-blue-600 border-cyan-300 text-black'; glow = 'shadow-[0_0_35px_rgba(34,211,238,0.8)]'; } // Lenda
+      if (player.overall >= 85) { rarity = 'from-slate-300 to-slate-500 border-slate-300 text-black'; glow = 'shadow-[0_0_15px_rgba(255,255,255,0.3)]'; } 
+      if (player.overall >= 90) { rarity = 'from-yellow-400 to-yellow-600 border-yellow-300 text-black'; glow = 'shadow-[0_0_25px_rgba(250,204,21,0.6)]'; } 
+      if (player.overall >= 95) { rarity = 'from-cyan-400 to-blue-600 border-cyan-300 text-black'; glow = 'shadow-[0_0_35px_rgba(34,211,238,0.8)]'; } 
 
       return (
-        <div 
-          onClick={() => onClick && onClick(player)}
-          className={`card-3d w-40 h-56 rounded-xl bg-gradient-to-br ${rarity} ${glow} p-3 flex flex-col justify-between cursor-pointer relative overflow-hidden animate-slide-up group`}
-          onMouseEnter={SFX.pick}
-        >
+        <div onClick={() => onClick && onClick(player)} className={`card-3d w-40 h-56 rounded-xl bg-gradient-to-br ${rarity} ${glow} p-3 flex flex-col justify-between cursor-pointer relative overflow-hidden animate-slide-up group`} onMouseEnter={SFX.pick}>
           <div className="absolute top-0 right-0 w-[150%] h-[150%] card-flare -translate-y-full group-hover:animate-flare"></div>
           <div className="flex justify-between items-start z-10">
             <span className="font-black text-4xl leading-none drop-shadow-md">{hidden ? '??' : player.overall}</span>
@@ -256,90 +218,239 @@
       );
     };
 
-    const MatchViewer = ({ match }) => {
+    //    const MatchViewer3D = ({ match }) => {
+      const mountRef = useRef(null);
       const [localMin, setLocalMin] = useState(0);
       const [events, setEvents] = useState([]);
       const [s1, setS1] = useState(0);
       const [s2, setS2] = useState(0);
-      const [momentum, setMomentum] = useState(50);
-      const [shake, setShake] = useState(false);
+      const engineRef = useRef(null);
 
       useEffect(() => {
-        if (!match || !match.played) return;
+        if (!match || !match.played || !mountRef.current) return;
         if(Date.now() - match.startTime < 1000) SFX.whistle();
 
-        const msPerMin = 333; 
-        const timer = setInterval(() => {
-          const elapsed = Date.now() - match.startTime;
-          let min = Math.floor(elapsed / msPerMin);
-          if (min > 90) { min = 90; clearInterval(timer); }
-          setLocalMin(min);
+        // 1. Configuração WebGL
+        const width = mountRef.current.clientWidth;
+        const height = mountRef.current.clientHeight;
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x020803, 0.02);
 
-          const currentEvents = match.events.filter(e => e.minute <= min);
-          setEvents(currentEvents.reverse()); 
+        const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
+        camera.position.set(0, 15, 20);
+        camera.lookAt(0, 0, 0);
 
-          const goals1 = currentEvents.filter(e => e.type === 'goal' && e.teamId === match.p1.uid).length;
-          const goals2 = currentEvents.filter(e => e.type === 'goal' && e.teamId === match.p2.uid).length;
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(width, height);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        mountRef.current.innerHTML = '';
+        mountRef.current.appendChild(renderer.domElement);
+
+        // 2. Construção do Campo Tático Holográfico (Wireframe Lines)
+        const fieldGroup = new THREE.Group();
+        const lineMat = new THREE.LineBasicMaterial({ color: 0x22c55e, transparent: true, opacity: 0.3 });
+        
+        // Linhas de borda e meio campo
+        const fieldGeo = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(-15, 0, -25), new THREE.Vector3(15, 0, -25),
+          new THREE.Vector3(15, 0, 25), new THREE.Vector3(-15, 0, 25),
+          new THREE.Vector3(-15, 0, -25)
+        ]);
+        const midLine = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-15, 0, 0), new THREE.Vector3(15, 0, 0)]);
+        
+        fieldGroup.add(new THREE.Line(fieldGeo, lineMat));
+        fieldGroup.add(new THREE.Line(midLine, lineMat));
+
+        // Áreas dos Gols (Glow Boxes)
+        const createGoal = (zPos, color) => {
+          const g = new THREE.BoxGeometry(8, 3, 2);
+          const m = new THREE.MeshBasicMaterial({ color: color, wireframe: true, transparent: true, opacity: 0.5 });
+          const mesh = new THREE.Mesh(g, m);
+          mesh.position.set(0, 1.5, zPos);
+          return mesh;
+        };
+        const goal1 = createGoal(-25, 0xeab308); // P1 Goal (Defends this, P2 attacks here)
+        const goal2 = createGoal(25, 0x3b82f6);  // P2 Goal (Defends this, P1 attacks here)
+        fieldGroup.add(goal1);
+        fieldGroup.add(goal2);
+        scene.add(fieldGroup);
+
+        // 3. A Bola Mágica (Ponto de Luz e Esfera)
+        const ballGeo = new THREE.SphereGeometry(0.5, 16, 16);
+        const ballMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const ball = new THREE.Mesh(ballGeo, ballMat);
+        
+        const ballLight = new THREE.PointLight(0xffffff, 2, 20);
+        ball.add(ballLight);
+        ball.position.set(0, 0.5, 0);
+        scene.add(ball);
+
+        // 4. Object Pool para Partículas de Gol (VFX)
+        const particleCount = 40;
+        const particles = new THREE.InstancedMesh(
+          new THREE.BoxGeometry(0.3, 0.3, 0.3),
+          new THREE.MeshBasicMaterial({ color: 0xffcc00 }),
+          particleCount
+        );
+        const dummy = new THREE.Object3D();
+        const pVelocities = [];
+        for(let i=0; i<particleCount; i++) {
+           particles.setMatrixAt(i, new THREE.Matrix4().makeScale(0,0,0)); // Esconde no init
+           pVelocities.push(new THREE.Vector3(0,0,0));
+        }
+        scene.add(particles);
+
+        let isExploding = false;
+        const triggerGoalVFX = (zPos) => {
+          isExploding = true;
+          for(let i=0; i<particleCount; i++) {
+            dummy.position.set((Math.random()-0.5)*4, 1.5 + Math.random()*2, zPos + (Math.random()-0.5)*2);
+            dummy.updateMatrix();
+            particles.setMatrixAt(i, dummy.matrix);
+            pVelocities[i].set((Math.random()-0.5)*0.5, Math.random()*0.5, (Math.random()-0.5)*0.5);
+          }
+          particles.instanceMatrix.needsUpdate = true;
+          setTimeout(() => { isExploding = false; for(let i=0; i<particleCount; i++) particles.setMatrixAt(i, new THREE.Matrix4().makeScale(0,0,0)); particles.instanceMatrix.needsUpdate = true; }, 1500);
+        };
+
+        // 5. Motor de Física / Loop de Renderização
+        const msPerMin = 333; // 30 segundos = 90 minutos virtuais
+        let animationId;
+        let targetZ = 0;
+        let targetX = 0;
+        let baseShake = 0;
+
+        const animate = () => {
+          animationId = requestAnimationFrame(animate);
+
+          const elapsedMs = Date.now() - match.startTime;
+          let currentVirtualMin = (elapsedMs / msPerMin);
+          let displayMin = Math.min(90, Math.floor(currentVirtualMin));
           
-          if (goals1 > s1 || goals2 > s2) {
-            SFX.goal();
-            setShake(true);
-            setTimeout(() => setShake(false), 500);
-          }
-          setS1(goals1); setS2(goals2);
+          if (displayMin <= 90) {
+            setLocalMin(displayMin);
+            
+            // Lógica de Sync de Eventos (UI)
+            const currentEvents = match.events.filter(e => e.minute <= displayMin);
+            if (currentEvents.length !== events.length) {
+                setEvents(currentEvents.reverse());
+                const g1 = currentEvents.filter(e => e.type === 'goal' && e.teamId === match.p1.uid).length;
+                const g2 = currentEvents.filter(e => e.type === 'goal' && e.teamId === match.p2.uid).length;
+                
+                if (g1 > s1) { SFX.goal(); triggerGoalVFX(25); baseShake = 1.0; } // P1 ataca P2
+                if (g2 > s2) { SFX.goal(); triggerGoalVFX(-25); baseShake = 1.0; } // P2 ataca P1
+                
+                setS1(g1); setS2(g2);
+            }
 
-          if (min < 90 && min % 3 === 0) {
-            const lastMom = match.momentumData?.find(m => m.min <= min);
-            let targetMom = lastMom ? lastMom.val : 50 + (Math.random() * 20 - 10);
-            setMomentum(targetMom);
+            // Lerp Engine (Smooth Interpolation)
+            // Acha o evento mais próximo para puxar a bola
+            const activeEvent = match.events.find(e => Math.abs(e.minute - currentVirtualMin) < 1.5);
+            
+            if (activeEvent) {
+               if (activeEvent.teamId === match.p1.uid) { targetZ = 20; targetX = (Math.random()-0.5)*10; } // P1 no ataque
+               else { targetZ = -20; targetX = (Math.random()-0.5)*10; } // P2 no ataque
+            } else {
+               // Roda no meio campo com base no momentum
+               const lastMom = match.momentumData?.find(m => m.min <= displayMin) || {val: 50};
+               // Mapeia 0-100 para -15 a 15 no Z
+               targetZ = ((lastMom.val - 50) / 50) * 15; 
+               targetX = Math.sin(currentVirtualMin) * 5; // Movimento orgânico
+            }
+
+            // Fim de jogo: bola no meio
+            if (currentVirtualMin >= 90) { targetZ = 0; targetX = 0; }
+
+            // Aplicar Lerp à Bola
+            ball.position.z += (targetZ - ball.position.z) * 0.05;
+            ball.position.x += (targetX - ball.position.x) * 0.05;
+            
+            // Quique orgânico
+            ball.position.y = 0.5 + Math.abs(Math.sin(currentVirtualMin * 2)) * 1.5;
+
+            // Física de Partículas (se explodindo)
+            if(isExploding) {
+              for(let i=0; i<particleCount; i++) {
+                particles.getMatrixAt(i, dummy.matrix);
+                dummy.position.setFromMatrixPosition(dummy.matrix);
+                dummy.position.add(pVelocities[i]);
+                pVelocities[i].y -= 0.02; // Gravidade
+                dummy.updateMatrix();
+                particles.setMatrixAt(i, dummy.matrix);
+              }
+              particles.instanceMatrix.needsUpdate = true;
+            }
+
+            // Camera Shake (Decay)
+            if (baseShake > 0.01) {
+              camera.position.x = (Math.random() - 0.5) * baseShake;
+              camera.position.y = 15 + (Math.random() - 0.5) * baseShake;
+              baseShake *= 0.9; // Decay
+            } else {
+              camera.position.x = 0;
+              camera.position.y = 15;
+            }
           }
-        }, 100);
-        return () => clearInterval(timer);
+
+          renderer.render(scene, camera);
+        };
+
+        animate();
+
+        // Cleanup
+        return () => {
+          cancelAnimationFrame(animationId);
+          if(mountRef.current) mountRef.current.innerHTML = '';
+          renderer.dispose();
+          fieldGeo.dispose();
+          lineMat.dispose();
+          ballGeo.dispose();
+          ballMat.dispose();
+        };
       }, [match]);
 
       if (!match) return null;
       const isFinished = localMin === 90;
 
       return (
-        <div className={`glass rounded-2xl flex flex-col h-[600px] overflow-hidden transition-all duration-300 ${shake ? 'animate-shake border-yellow-500 shadow-[0_0_50px_rgba(250,204,21,0.5)]' : 'border-green-800'}`}>
-          <div className={`p-4 border-b border-white/10 text-center relative transition-colors duration-500 ${shake ? 'bg-yellow-600 text-black' : 'bg-gradient-to-b from-black/80 to-transparent'}`}>
-            <div className={`font-black text-xs tracking-widest mb-2 flex justify-center items-center gap-2 ${shake ? 'text-black' : 'text-yellow-400'}`}>
+        <div className="glass rounded-2xl flex flex-col h-[600px] overflow-hidden border-green-800 shadow-2xl relative">
+          
+          {/* Header Placar */}
+          <div className="p-4 border-b border-white/10 text-center relative z-20 bg-gradient-to-b from-black/90 to-transparent">
+            <div className="font-black text-xs tracking-widest mb-2 flex justify-center items-center gap-2 text-yellow-400">
               {isFinished ? <><i className="fa-solid fa-flag-checkered"></i> FIM DE JOGO</> : <><i className="fa-solid fa-satellite-dish animate-pulse"></i> {localMin}' MINUTOS</>}
             </div>
-            <div className="flex justify-between items-center px-2 md:px-8 relative z-10">
-              <div className="flex-1 text-right font-black text-xl md:text-3xl truncate drop-shadow-lg">{match.p1.name}</div>
+            <div className="flex justify-between items-center px-2 md:px-8">
+              <div className="flex-1 text-right font-black text-xl md:text-3xl truncate drop-shadow-lg text-yellow-500">{match.p1.name}</div>
               <div className="mx-4 px-6 py-2 bg-black/80 rounded-xl border border-white/20 flex gap-4 text-4xl font-black text-white shadow-inner">
                 <span>{s1}</span><span className="text-gray-600 text-2xl self-center">x</span><span>{s2}</span>
               </div>
-              <div className="flex-1 text-left font-black text-xl md:text-3xl truncate drop-shadow-lg">{match.p2.name}</div>
-            </div>
-            
-            <div className="absolute bottom-0 left-0 w-full h-2 bg-gray-900 overflow-hidden flex">
-              <div className="h-full bg-blue-500 momentum-bar relative" style={{width: `${100 - momentum}%`}}>
-                <div className="absolute right-0 top-0 w-10 h-full bg-gradient-to-l from-white/50 to-transparent"></div>
-              </div>
-              <div className="h-full bg-red-500 momentum-bar relative" style={{width: `${momentum}%`}}>
-                 <div className="absolute left-0 top-0 w-10 h-full bg-gradient-to-r from-white/50 to-transparent"></div>
-              </div>
+              <div className="flex-1 text-left font-black text-xl md:text-3xl truncate drop-shadow-lg text-blue-400">{match.p2.name}</div>
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gradient-to-b from-black/20 to-black/80">
-            {events.length === 0 && <div className="text-center text-green-500/50 mt-20 font-bold text-xl animate-pulse">A bola rola e o cronômetro dispara...</div>}
-            {events.map((ev, i) => {
-              let bg = 'bg-black/50 border-green-900/50 text-gray-300';
+          {/* O CANVAS 3D SUBSTITUI O FUNDO AQUI */}
+          <div className="absolute inset-0 z-0">
+             <div ref={mountRef} className="w-full h-full"></div>
+             {/* Fade na base para o texto não sumir */}
+             <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black/90 to-transparent pointer-events-none"></div>
+          </div>
+
+          {/* Feed de Eventos Sobreposto */}
+          <div className="relative z-10 flex-1 overflow-y-auto p-4 space-y-2 mt-auto h-48 scrollbar-hide flex flex-col-reverse">
+            {events.slice(0,4).map((ev, i) => {
+              let bg = 'bg-black/60 border-green-900/50 text-gray-300 backdrop-blur-sm';
               let icon = 'fa-shoe-prints text-green-600';
-              if(ev.type === 'goal') { bg = 'bg-yellow-500 text-black border-yellow-400 font-black text-xl scale-[1.02] shadow-[0_0_20px_rgba(250,204,21,0.4)]'; icon = 'fa-futbol animate-bounce'; }
-              else if(ev.type === 'foul') { bg = 'bg-red-950/80 border-red-700 text-red-100 font-bold'; icon = 'fa-square text-red-500'; }
-              else if(ev.type === 'save') { bg = 'bg-blue-950/80 border-blue-700 text-blue-100 font-bold'; icon = 'fa-hands text-blue-400'; }
-              else if(ev.type === 'attack') { bg = 'bg-green-900/80 border-green-500 text-green-50 font-bold'; icon = 'fa-fire text-orange-500'; }
-              else if(ev.type === 'info') { bg = 'bg-gray-800 border-gray-600 text-white font-black text-center justify-center'; icon = 'fa-info-circle text-gray-400'; }
+              if(ev.type === 'goal') { bg = 'bg-yellow-500/90 text-black border-yellow-400 font-black text-lg shadow-[0_0_15px_rgba(250,204,21,0.6)] backdrop-blur-md'; icon = 'fa-futbol animate-bounce'; }
+              else if(ev.type === 'save') { bg = 'bg-blue-900/80 border-blue-500 text-blue-100 font-bold backdrop-blur-md'; icon = 'fa-hands text-blue-400'; }
+              else if(ev.type === 'foul') { bg = 'bg-red-900/80 border-red-700 text-red-100 font-bold backdrop-blur-md'; icon = 'fa-square text-red-500'; }
+              else if(ev.type === 'attack') { bg = 'bg-green-900/80 border-green-500 text-green-50 font-bold backdrop-blur-md'; icon = 'fa-fire text-orange-500'; }
 
               return (
-                <div key={i} className={`p-4 rounded-xl border-2 flex gap-4 items-center animate-slide-up ${bg}`}>
-                  {ev.type !== 'info' && <span className="font-black opacity-60 min-w-[35px] text-right">{ev.minute}'</span>}
-                  <i className={`fa-solid ${icon} text-xl`}></i>
-                  <span className="leading-tight flex-1">{ev.text}</span>
+                <div key={i} className={`p-3 rounded-lg border flex gap-3 items-center animate-slide-up ${bg}`}>
+                  {ev.type !== 'info' && <span className="font-black opacity-70 min-w-[30px] text-right text-sm">{ev.minute}'</span>}
+                  <i className={`fa-solid ${icon}`}></i>
+                  <span className="leading-tight flex-1 text-sm md:text-base">{ev.text}</span>
                 </div>
               )
             })}
@@ -348,11 +459,11 @@
       );
     };
 
-    function App() {
+    //    function App() {
       const [user, setUser] = useState(null);
       const [isAuthLoading, setIsAuthLoading] = useState(true);
       const [playerName, setPlayerName] = useState('');
-      const [appState, setAppState] = useState('INIT');
+      const [appState, setAppState] = useState('INIT'); 
       const [roomData, setRoomData] = useState(null);
       const [roomId, setRoomId] = useState('');
       const [gameMode, setGameMode] = useState('knockout'); 
@@ -363,16 +474,18 @@
       const [myTeam, setMyTeam] = useState([]);
       const [walkoutPlayer, setWalkoutPlayer] = useState(null);
       const [tactic, setTactic] = useState('Equilibrado');
-      
-      // Armazena IDs que o jogador atual já viu
       const seenIds = useRef(new Set()); 
 
       useEffect(() => {
-        auth.signInAnonymously().catch(err => {
-          console.error("Auth Fail:", err);
-          setError("Falha ao autenticar. Verifique a conexão.");
-          setIsAuthLoading(false);
-        });
+        const init = async () => {
+          try {
+            await auth.signInAnonymously();
+          } catch(e) {
+            console.error("Auth Fail:", e);
+            setError("Erro crítico ao conectar no servidor. Ative Login Anônimo.");
+          }
+        };
+        init();
         
         const unsub = auth.onAuthStateChanged(u => {
           setUser(u);
@@ -389,14 +502,13 @@
             const data = snap.val();
             setRoomData(data);
             
-            // Sync Engine State
             if(data.status === 'draft_setup' && appState === 'LOBBY') setAppState('DRAFT_SETUP');
             if(data.status === 'drafting' && appState === 'DRAFT_SETUP') setAppState('DRAFTING');
             if(data.status === 'tactics' && appState === 'DRAFTING') setAppState('TACTICS');
             if(data.status === 'tournament' && appState !== 'TOURNAMENT') setAppState('TOURNAMENT');
           } else {
             setAppState('MENU');
-            setError('A sala foi encerrada.');
+            setError('A sala foi encerrada pelo Host.');
           }
         });
         return () => roomRef.off('value', listener);
@@ -410,78 +522,46 @@
 
       const handleCreateRoom = async () => {
         SFX.click();
-        if(!user) return setError("Erro de Autenticação. Recarregue a página.");
         if(!playerName || !roomId) return setError("Preencha Nome e Sala.");
-        
-        try {
-          const roomRef = db.ref(`games/${APP_ID}/${roomId}`);
-          const snap = await roomRef.get();
-          if(snap.exists()) return setError("Sala já existe. Escolha outro código.");
+        const roomRef = db.ref(`games/${APP_ID}/${roomId}`);
+        const snap = await roomRef.get();
+        if(snap.exists()) return setError("Sala já existe. Escolha outro código.");
 
-          await roomRef.set({
-            hostUid: user.uid, 
-            status: 'lobby', 
-            stage: 0, 
-            mode: gameMode,
-            players: { 
-              [user.uid]: { name: playerName, overall: 0, isReady: false, isBot: false, tactic: 'Equilibrado' } 
-            }
-          });
-          setAppState('LOBBY');
-          setError('');
-        } catch (e) {
-          console.error(e);
-          setError("Erro ao criar sala. Verifique regras do Firebase.");
-        }
+        await roomRef.set({
+          hostUid: user.uid, status: 'lobby', stage: 0, mode: gameMode,
+          players: { [user.uid]: { name: playerName, team: [], overall: 0, isReady: false, isBot: false, tactic: 'Equilibrado' } }
+        });
+        setAppState('LOBBY');
       };
 
       const handleJoinRoom = async () => {
         SFX.click();
-        if(!user) return setError("Erro de Autenticação. Recarregue a página.");
         if(!playerName || !roomId) return setError("Preencha Nome e Sala.");
+        const roomRef = db.ref(`games/${APP_ID}/${roomId}`);
+        const snap = await roomRef.get();
+        if(!snap.exists()) return setError("Sala não encontrada.");
+        const data = snap.val();
+        if(data.status !== 'lobby') return setError("A partida já começou.");
         
-        try {
-          const roomRef = db.ref(`games/${APP_ID}/${roomId}`);
-          const snap = await roomRef.get();
-          if(!snap.exists()) return setError("Sala não encontrada.");
-          const data = snap.val();
-          if(data.status !== 'lobby') return setError("A partida já começou.");
-          
-          await roomRef.update({ 
-            [`players/${user.uid}`]: { name: playerName, overall: 0, isReady: false, isBot: false, tactic: 'Equilibrado' } 
-          });
-          setAppState('LOBBY');
-          setError('');
-        } catch (e) {
-          console.error(e);
-          setError("Erro ao entrar na sala.");
-        }
+        await roomRef.update({ [`players/${user.uid}`]: { name: playerName, team: [], overall: 0, isReady: false, isBot: false, tactic: 'Equilibrado' } });
+        setAppState('LOBBY');
       };
 
-      const generatePacks = (currentTeam) => {
-        if (currentTeam.length >= 11) {
-           setDraftOptions([]);
-           return;
-        }
-        
-        const requiredPos = FORMATIONS[myFormation][currentTeam.length];
-        
-        // Culling (Filtra jogadores corretos e que ainda não apareceram)
+      const pullPacks = (currentTeamLength) => {
+        if (currentTeamLength >= 11) return;
+        const requiredPos = FORMATIONS[myFormation][currentTeamLength];
         let pool = PLAYER_DATABASE.filter(p => p.pos === requiredPos && !seenIds.current.has(p.baseId));
-        
-        // Procedural Fallback System (Se a database estourar, a engine gera bagres automaticamente para salvar o jogo)
-        if (pool.length < 3) {
-           const fallbacks = ["Promessa da Base", "Veterano Cansado", "Reforço Desconhecido"];
-           while(pool.length < 3) {
-             const fakeId = `gen_${Date.now()}_${pool.length}`;
-             pool.push({
-               id: fakeId, baseId: fakeId, name: fallbacks[pool.length % 3], 
-               year: 2024, team: 'Agente Livre', overall: 65 + Math.floor(Math.random()*15), pos: requiredPos
-             });
-           }
-        }
-        
         let options = pool.sort(() => 0.5 - Math.random()).slice(0, 3);
+        
+        let botIndex = 0;
+        while (options.length < 3) {
+           const mockId = `gen_${requiredPos}_${Date.now()}_${botIndex}`;
+           options.push({
+             id: mockId, baseId: mockId, name: `Base Talent`, year: 2024, team: 'Academy', 
+             overall: 70 + Math.floor(Math.random()*12), pos: requiredPos
+           });
+           botIndex++;
+        }
         options.forEach(p => seenIds.current.add(p.baseId));
         setDraftOptions(options);
       };
@@ -489,35 +569,39 @@
       const startDrafting = () => {
         SFX.click();
         setAppState('DRAFTING');
-        generatePacks([]); 
+        pullPacks(0); 
+      };
+
+      const calculateChemistry = (team) => {
+        let chemBoost = 0;
+        const teamCounts = {};
+        team.forEach(p => { teamCounts[p.team] = (teamCounts[p.team] || 0) + 1; });
+        Object.values(teamCounts).forEach(count => { if(count >= 2) chemBoost += (count - 1) * 2; });
+        return chemBoost;
       };
 
       const pickPlayer = async (player) => {
-        if (myTeam.length >= 11) return; // Trava de segurança
-        
+        if (myTeam.length >= 11) return;
         if (player.overall >= 93) {
           SFX.walkout();
           setWalkoutPlayer(player);
           setTimeout(() => setWalkoutPlayer(null), 3000);
-        } else {
-          SFX.pick();
-        }
+        } else SFX.pick();
         
         const newTeam = [...myTeam, player];
-        setMyTeam(newTeam); // Async React
+        setMyTeam(newTeam);
         
-        // Passamos newTeam DIRETAMENTE para não depender do delay do React
         if (newTeam.length < 11) {
-          generatePacks(newTeam); 
+          pullPacks(newTeam.length);
         } else {
-          // TIME FECHADO!
           setDraftOptions([]); 
           const baseOvr = newTeam.reduce((acc, p) => acc + p.overall, 0) / 11;
-          const finalOvr = Math.min(99, Math.round(baseOvr));
+          const chemOvr = calculateChemistry(newTeam);
+          const finalOvr = Math.min(99, Math.round(baseOvr + chemOvr));
           
           try {
             await db.ref(`games/${APP_ID}/${roomId}/players/${user.uid}`).update({
-              overall: finalOvr, isReady: true
+              team: newTeam, overall: finalOvr, isReady: true
             });
           } catch(e) { console.error("Save error", e); }
         }
@@ -528,7 +612,7 @@
         await db.ref(`games/${APP_ID}/${roomId}/players/${user.uid}`).update({ tactic, isReady: true });
       };
 
-      const createTournamentBracket = async () => {
+      const generateTournamentBracket = async () => {
         SFX.click();
         const players = Object.entries(roomData?.players || {}).map(([uid, p]) => ({uid, ...p}));
         
@@ -539,7 +623,7 @@
         let bracketPlayers = [...players];
         let b = 0;
         while(bracketPlayers.length < targetSize) {
-          bracketPlayers.push({ uid: `bot_${b}`, name: BOT_NAMES[b%BOT_NAMES.length], overall: 75 + Math.floor(Math.random()*15), isBot: true, tactic: 'Equilibrado' });
+          bracketPlayers.push({ uid: `bot_${b}`, name: BOT_NAMES[b%BOT_NAMES.length], overall: 75 + Math.floor(Math.random()*15), isBot: true, tactic: 'Equilibrado', team: [] });
           b++;
         }
         bracketPlayers.sort(() => 0.5 - Math.random());
@@ -572,7 +656,6 @@
            const t1 = TACTICS[match.p1.tactic] || TACTICS['Equilibrado'];
            const t2 = TACTICS[match.p2.tactic] || TACTICS['Equilibrado'];
 
-           // Fator Zebra Matemático (Imprevisibilidade)
            const luck1 = (Math.random() * 20 - 10);
            const luck2 = (Math.random() * 20 - 10);
            const ovr1 = (match.p1.overall * t1.atkMod) + luck1; 
@@ -599,20 +682,21 @@
                const roll = Math.random();
                if(roll < 0.20) { 
                  s1 += isP1 ? 1 : 0; s2 += isP1 ? 0 : 1;
-                 events.push({ minute: min, type: 'goal', teamId: att.uid, text: `GOLAÇO! ${att.name} balança as redes!` });
+                 const goalTexts = [`GOLAÇO! ${att.name} fuzila pro fundo das redes!`, `É GOL! Troca de passes envolvente do ${att.name}!`, `QUE PINTURA! ${att.name} encobre o goleiro!`];
+                 events.push({ minute: min, type: 'goal', teamId: att.uid, text: goalTexts[Math.floor(Math.random()*goalTexts.length)] });
                  currentMom = 50;
                } else if(roll < 0.45) {
-                 events.push({ minute: min, type: 'save', teamId: def.uid, text: `MILAGRE do goleiro do ${def.name}!` });
+                 events.push({ minute: min, type: 'save', teamId: def.uid, text: `MILAGRE! Goleiro do ${def.name} espalma na gaveta.` });
                } else if(roll < 0.65) {
-                 events.push({ minute: min, type: 'foul', teamId: def.uid, text: `Falta dura da defesa do ${def.name}. Juiz dá o cartão.` });
+                 events.push({ minute: min, type: 'foul', teamId: def.uid, text: `Falta dura da defesa do ${def.name}. O juiz dá amarelo!` });
                } else {
-                 events.push({ minute: min, type: 'attack', teamId: att.uid, text: `UHH! O chute de ${att.name} passa raspando a trave.` });
+                 events.push({ minute: min, type: 'attack', teamId: att.uid, text: `UHH! ${att.name} enche o pé e a bola tira tinta da trave.` });
                }
              }
            }
 
            if (s1 === s2) {
-             events.push({ minute: 90, type: 'info', text: 'Tudo igual. Vamos para os pênaltis!' });
+             events.push({ minute: 90, type: 'info', text: 'Tudo igual. Vamos para as cobranças de pênaltis!' });
              if(Math.random() > 0.5) { s1++; events.push({ minute: 90, type: 'goal', teamId: match.p1.uid, text: `${match.p1.name} VENCE NOS PÊNALTIS!` }); }
              else { s2++; events.push({ minute: 90, type: 'goal', teamId: match.p2.uid, text: `${match.p2.name} VENCE NOS PÊNALTIS!` }); }
            }
@@ -634,200 +718,46 @@
            } else {
              await db.ref(`games/${APP_ID}/${roomId}`).update({ stage: 4 }); 
            }
-        }, 32000); 
+        }, 33000); 
       };
 
-      // --- RENDERS DA MÁQUINA DE ESTADO ---
-      if (isAuthLoading) return <div className="min-h-screen flex items-center justify-center bg-black text-green-500 font-black text-2xl animate-pulse">Iniciando Engine GOTY...</div>;
+      // --- UI RENDER (States) ---
+      if (isAuthLoading) return <div className="min-h-screen flex items-center justify-center bg-black text-green-500 font-black text-2xl animate-pulse"><i className="fa-solid fa-satellite-dish mr-3"></i> Conectando à Rede Neural...</div>;
+      if (appState === 'INIT') return <div className="min-h-screen flex items-center justify-center bg-black"><button onClick={initEngine} className="glass p-16 rounded-[3rem] flex flex-col items-center hover:scale-105 transition-all shadow-[0_0_80px_rgba(250,204,21,0.3)] border-2 border-yellow-500/50 group"><i className="fa-solid fa-power-off text-8xl text-yellow-500 mb-8 group-hover:animate-pulse"></i><h1 className="text-6xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-600 drop-shadow-lg">INICIALIZAR ENGINE 3D</h1></button></div>;
+      if (appState === 'MENU') return (
+        <div className="min-h-screen flex items-center justify-center pitch-bg p-4"><div className="glass p-10 rounded-3xl w-full max-w-md shadow-2xl animate-slide-up border border-green-500/30 relative overflow-hidden"><div className="text-center mb-10"><i className="fa-solid fa-trophy text-7xl text-yellow-400 drop-shadow-[0_0_30px_rgba(250,204,21,0.6)] mb-4 animate-pulse-fast"></i><h1 className="text-5xl font-black italic tracking-tighter text-white">DRAFT KINGS</h1></div><div className="space-y-5"><input className="w-full p-4 bg-black/60 rounded-xl text-white outline-none border-2 border-green-900 focus:border-yellow-400 font-bold transition text-lg" placeholder="Seu Nome" value={playerName} onChange={e=>setPlayerName(e.target.value)} /><div className="flex gap-3"><input className="w-full p-4 bg-black/60 rounded-xl text-white outline-none border-2 border-green-900 uppercase focus:border-yellow-400 font-black transition text-lg" placeholder="SALA" value={roomId} onChange={e=>setRoomId(e.target.value.toUpperCase())} /><select className="p-4 bg-black/60 rounded-xl text-white outline-none border-2 border-green-900 font-bold" value={gameMode} onChange={e=>setGameMode(e.target.value)}><option value="knockout">MATA-MATA</option><option value="1v1">DUELO X1</option></select></div>{error && <div className="text-red-400 font-black text-sm text-center bg-red-950/80 border border-red-500 p-3 rounded-xl shadow-lg">{error}</div>}<div className="pt-4 space-y-3"><button onClick={handleCreateRoom} className="w-full bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-black py-4 rounded-xl shadow-[0_0_20px_rgba(250,204,21,0.4)] hover:scale-[1.03] transition text-lg">FUNDAR LIGA</button><button onClick={handleJoinRoom} className="w-full border-2 border-green-600 text-green-400 hover:bg-green-600 hover:text-white font-black py-4 rounded-xl transition text-lg">ENTRAR NA LIGA</button></div></div></div></div>
+      );
+      if (!roomData) return <div className="min-h-screen flex items-center justify-center pitch-bg text-yellow-500 font-black text-2xl"><div className="glass p-8 rounded-2xl flex items-center animate-pulse"><i className="fa-solid fa-network-wired mr-4 text-4xl"></i> Sincronizando...</div></div>;
+      
+      if (appState === 'LOBBY') return (
+        <div className="min-h-screen p-4 md:p-10 bg-green-950 flex flex-col items-center justify-center pitch-bg"><div className="glass p-8 md:p-12 rounded-[2rem] w-full max-w-5xl shadow-2xl animate-slide-up border border-green-800"><div className="flex flex-col md:flex-row justify-between items-center border-b-2 border-green-800/50 pb-6 mb-10"><div><h2 className="text-4xl md:text-5xl font-black">LOBBY <span className="text-yellow-400 font-mono tracking-tighter">{roomId}</span></h2></div><div className="bg-black/40 px-6 py-3 rounded-xl border border-green-900 mt-4 md:mt-0 font-bold">{Object.keys(roomData?.players||{}).length} / {roomData?.mode === '1v1' ? 2 : 8} Treinadores</div></div><div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-12">{Object.entries(roomData?.players||{}).map(([uid, p]) => (<div key={uid} className="bg-gradient-to-b from-green-900/50 to-black/50 p-6 rounded-2xl border border-green-700 flex flex-col items-center gap-4 shadow-lg"><div className={`w-16 h-16 rounded-full flex items-center justify-center shadow-inner text-2xl ${uid === roomData?.hostUid ? 'bg-yellow-500/20 border-2 border-yellow-500 text-yellow-400' : 'bg-green-800 border-2 border-green-600 text-green-300'}`}>{uid === roomData?.hostUid ? <i className="fa-solid fa-crown"></i> : <i className="fa-solid fa-user"></i>}</div><span className="font-black text-lg truncate w-full text-center tracking-tight">{p.name}</span></div>))}</div><div className="text-center bg-black/30 p-8 rounded-2xl border border-white/5">{isHost ? (<button onClick={()=>db.ref(`games/${APP_ID}/${roomId}`).update({status:'draft_setup'})} className="bg-yellow-500 text-black font-black px-12 py-5 rounded-xl text-2xl shadow-[0_0_30px_rgba(250,204,21,0.5)] hover:scale-105 transition w-full md:w-auto">PRANCHETA TÁTICA</button>) : (<div className="text-yellow-400 font-bold text-xl animate-pulse">Aguardando Host...</div>)}</div></div></div>
+      );
 
-      if (appState === 'INIT') {
-        return (
-          <div className="min-h-screen flex items-center justify-center bg-black">
-            <button onClick={initEngine} className="glass p-16 rounded-[3rem] flex flex-col items-center hover:scale-105 transition border-2 border-yellow-500/50">
-              <i className="fa-solid fa-power-off text-8xl text-yellow-500 mb-8 animate-pulse"></i>
-              <h1 className="text-6xl font-black text-yellow-400">INICIALIZAR ÁUDIO GOTY</h1>
-            </button>
-          </div>
-        );
-      }
-
-      if (appState === 'MENU') {
-        return (
-          <div className="min-h-screen flex items-center justify-center bg-pitch p-4">
-            <div className="glass p-10 rounded-3xl w-full max-w-md shadow-2xl border border-green-500/30">
-              <div className="text-center mb-10">
-                <i className="fa-solid fa-trophy text-7xl text-yellow-400 mb-4 animate-pulse-fast"></i>
-                <h1 className="text-5xl font-black text-white">DRAFT KINGS</h1>
-              </div>
-              <div className="space-y-5">
-                <input className="w-full p-4 bg-black/60 rounded-xl text-white outline-none border border-green-900" placeholder="Nome do Treinador" value={playerName} onChange={e=>setPlayerName(e.target.value)} />
-                <div className="flex gap-3">
-                   <input className="w-full p-4 bg-black/60 rounded-xl text-white outline-none border border-green-900 uppercase" placeholder="SALA" value={roomId} onChange={e=>setRoomId(e.target.value.toUpperCase())} />
-                   <select className="p-4 bg-black/60 rounded-xl text-white outline-none border border-green-900" value={gameMode} onChange={e=>setGameMode(e.target.value)}>
-                     <option value="knockout">MATA-MATA</option>
-                   </select>
-                </div>
-                {error && <div className="text-red-400 font-black text-center bg-red-900/40 border border-red-500 p-3 rounded-xl">{error}</div>}
-                <div className="pt-4 space-y-3">
-                  <button onClick={handleCreateRoom} className="w-full bg-yellow-500 text-black font-black py-4 rounded-xl hover:scale-[1.03] transition"><i className="fa-solid fa-crown mr-2"></i> FUNDAR LIGA</button>
-                  <button onClick={handleJoinRoom} className="w-full border-2 border-green-600 text-green-400 hover:bg-green-600 hover:text-white font-black py-4 rounded-xl transition"><i className="fa-solid fa-play mr-2"></i> ENTRAR</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      }
-
-      // SYNC GATE
-      if (!roomData) return <div className="min-h-screen bg-black text-yellow-500 flex justify-center items-center font-black text-2xl">Sincronizando Rede...</div>;
-
-      const isHost = roomData?.hostUid === user?.uid;
-      const myPlayerStatus = roomData?.players?.[user?.uid];
-      const allReady = roomData?.players && Object.values(roomData.players).every(p => p.isReady);
-
-      if (appState === 'LOBBY') {
-        return (
-          <div className="min-h-screen p-10 bg-green-950 flex flex-col items-center justify-center">
-            <div className="glass p-12 rounded-[2rem] w-full max-w-5xl border border-green-800">
-              <h2 className="text-5xl font-black mb-10 text-white">LOBBY <span className="text-yellow-400">{roomId}</span></h2>
-              <div className="grid grid-cols-4 gap-6 mb-12">
-                {Object.entries(roomData?.players || {}).map(([uid, p]) => (
-                  <div key={uid} className="bg-black/50 p-6 rounded-2xl border border-green-700 flex flex-col items-center text-white">
-                    <i className={`fa-solid ${uid === roomData.hostUid ? 'fa-crown text-yellow-400' : 'fa-user text-green-400'} text-3xl mb-4`}></i>
-                    <span className="font-black text-lg">{p.name}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="text-center">
-                {isHost ? (
-                  <button onClick={()=>db.ref(`games/${APP_ID}/${roomId}`).update({status:'draft_setup'})} className="bg-yellow-500 text-black font-black px-12 py-5 rounded-xl text-2xl">PRANCHETA TÁTICA</button>
-                ) : (
-                  <div className="text-yellow-400 font-bold text-xl animate-pulse">Aguardando Host...</div>
-                )}
-              </div>
-            </div>
-          </div>
-        )
-      }
-
-      if (appState === 'DRAFT_SETUP') {
-        return (
-          <div className="min-h-screen bg-pitch p-6 flex flex-col items-center justify-center">
-            <div className="glass p-12 rounded-[2rem] w-full max-w-2xl text-center border border-green-600">
-              <h1 className="text-5xl font-black mb-4 text-white">Esquema Tático</h1>
-              <div className="grid grid-cols-2 gap-4 mb-10">
-                {Object.keys(FORMATIONS).map(form => (
-                  <button key={form} onClick={()=>{SFX.click(); setMyFormation(form);}} className={`py-6 rounded-2xl font-black text-3xl border-4 ${myFormation === form ? 'bg-green-700 border-green-400 text-white' : 'bg-black/60 border-green-900 text-gray-500'}`}>
-                    {form}
-                  </button>
-                ))}
-              </div>
-              <button onClick={startDrafting} className="w-full bg-yellow-500 text-black font-black py-5 rounded-xl text-2xl">INICIAR DRAFT</button>
-            </div>
-          </div>
-        )
-      }
+      if (appState === 'DRAFT_SETUP') return (
+        <div className="min-h-screen bg-pitch p-6 flex flex-col items-center justify-center pitch-bg"><div className="glass p-12 rounded-[2rem] w-full max-w-2xl text-center shadow-2xl border border-green-600"><i className="fa-solid fa-pen-ruler text-7xl text-green-400 mb-6"></i><h1 className="text-5xl font-black mb-4 tracking-tighter">Esquema Tático</h1><div className="grid grid-cols-2 gap-4 mb-10">{Object.keys(FORMATIONS).map(form => (<button key={form} onClick={()=>{SFX.click(); setMyFormation(form);}} className={`py-6 rounded-2xl font-black text-3xl border-4 transition-all duration-200 ${myFormation === form ? 'bg-green-700 border-green-400 shadow-[0_0_20px_rgba(74,222,128,0.6)] scale-[1.02]' : 'bg-black/60 border-green-900 text-gray-500 hover:border-green-600 hover:text-white'}`}>{form}</button>))}</div><button onClick={startDrafting} className="w-full bg-yellow-500 text-black font-black py-5 rounded-xl text-2xl shadow-[0_0_20px_rgba(250,204,21,0.4)] hover:bg-yellow-400 transition">ABRIR PACOTES</button></div></div>
+      );
 
       if (appState === 'DRAFTING') {
-        const isDraftFinished = myTeam.length >= 11;
-        const currentReqPos = !isDraftFinished ? FORMATIONS[myFormation][myTeam.length] : null;
-
+        const isDraftFinished = myTeam.length === 11;
+        const currentReqPos = !isDraftFinished ? FORMATIONS[myFormation][myTeam.length] : '---';
         return (
-          <div className="min-h-screen bg-green-950 flex font-sans">
-             {walkoutPlayer && (
-               <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center animate-walkout backdrop-blur-md">
-                 <div className="scale-150 relative z-10"><PlayerCard player={walkoutPlayer} /></div>
-                 <div className="absolute bottom-20 text-yellow-400 font-black text-5xl animate-pulse uppercase">LENDA DRAFTADA!</div>
-               </div>
-             )}
-
-             <div className="w-[350px] pitch-bg border-r-2 border-green-800 p-6 flex flex-col shadow-2xl relative">
-                 <h2 className="text-2xl font-black mb-6 flex justify-between border-b-2 border-green-800 pb-4 text-white">
-                   <span>Esquadrão</span> <span className="text-yellow-400">{myFormation}</span>
-                 </h2>
-                 <div className="flex-1 overflow-y-auto space-y-2">
-                   {FORMATIONS[myFormation].map((pos, i) => {
-                     const p = myTeam[i];
-                     const isActive = i === myTeam.length && !isDraftFinished; 
-                     return (
-                       <div key={i} className={`flex justify-between items-center p-3 rounded-xl border-2 ${isActive ? 'bg-green-800 border-yellow-400' : p ? 'bg-green-900/40 border-green-700 text-white' : 'bg-black/30 border-dashed border-green-900/50 text-gray-500'}`}>
-                         <div className="flex items-center gap-4">
-                           <span className={`w-12 text-center font-black text-sm px-1 py-1 rounded ${isActive ? 'bg-yellow-500 text-black' : p ? 'bg-black/60 text-green-400' : 'bg-black/40'}`}>{pos}</span>
-                           <span className="font-bold text-sm truncate max-w-[150px]">{p ? p.name : 'Aguardando...'}</span>
-                         </div>
-                         {p && <i className="fa-solid fa-check text-green-500"></i>}
-                       </div>
-                     )
-                   })}
-                 </div>
-             </div>
-
-             <div className="flex-1 flex items-center justify-center p-6 pitch-bg relative">
+          <div className="min-h-screen bg-green-950 flex flex-col lg:flex-row overflow-hidden font-sans pitch-bg">
+             {walkoutPlayer && (<div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center animate-walkout backdrop-blur-md"><div className="scale-150 relative z-10"><PlayerCard player={walkoutPlayer} /></div><div className="absolute bottom-20 text-yellow-400 font-black text-5xl tracking-widest animate-pulse drop-shadow-[0_0_20px_rgba(250,204,21,0.8)] uppercase">LENDA DRAFTADA!</div></div>)}
+             <div className="w-full lg:w-[350px] border-r-2 border-green-800 p-6 flex flex-col z-20 shadow-2xl relative bg-black/60 backdrop-blur-md"><h2 className="text-2xl font-black mb-6 flex items-center justify-between border-b-2 border-green-800 pb-4"><span className="flex items-center gap-3"><i className="fa-solid fa-shield-halved text-yellow-400 text-3xl"></i> Esquadrão</span><span className="text-sm font-black bg-green-900 px-3 py-1 rounded text-green-300 border border-green-600 shadow-inner">{myFormation}</span></h2><div className="flex-1 overflow-y-auto space-y-2 pr-2">{FORMATIONS[myFormation].map((pos, i) => { const p = myTeam[i]; const isActive = i === myTeam.length && !isDraftFinished; let boxStyle = "bg-black/30 border-green-900/50 text-gray-500 border-dashed border-2"; if (p) boxStyle = "bg-green-900/40 border-green-700 text-white border-solid border"; if (isActive) boxStyle = "bg-green-800 border-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.3)] border-solid border-2 scale-105 z-10"; return (<div key={i} className={`flex justify-between items-center p-3 rounded-xl transition-all duration-300 relative ${boxStyle}`}>{isActive && <div className="absolute -left-2 w-1 h-8 bg-yellow-400 rounded-full"></div>}<div className="flex items-center gap-4"><span className={`w-12 text-center font-black text-sm px-1 py-1.5 rounded ${isActive ? 'bg-yellow-500 text-black' : p ? 'bg-black/60 text-green-400' : 'bg-black/40'}`}>{pos}</span><span className={`font-bold text-sm truncate max-w-[150px] ${p ? 'opacity-100' : 'opacity-40 italic'}`}>{p ? p.name : 'Aguardando...'}</span></div>{p && <i className="fa-solid fa-check text-green-500 font-bold"></i>}</div>) })}</div></div>
+             <div className="flex-1 flex items-center justify-center p-6 relative">
                 {!isDraftFinished ? (
-                  <div className="text-center w-full max-w-4xl">
-                    <div className="mb-14">
-                      <span className="bg-yellow-500 text-black font-black px-6 py-2 rounded-full shadow-lg">RODADA {myTeam.length + 1}/11</span>
-                      <h1 className="text-6xl font-black mt-6 text-white">Procurando <span className="text-green-400 underline decoration-yellow-500">{currentReqPos}</span></h1>
-                    </div>
-                    <div className="flex justify-center gap-12 flex-wrap">
-                      {draftOptions.map(p => <PlayerCard key={p.id} player={p} onClick={pickPlayer} />)}
-                    </div>
-                  </div>
+                  <div className="z-10 text-center w-full max-w-4xl animate-slide-up"><div className="mb-14"><span className="bg-yellow-500 text-black font-black px-6 py-2 rounded-full text-sm tracking-widest uppercase shadow-[0_0_15px_rgba(250,204,21,0.4)]">RODADA {myTeam.length + 1}/11</span><h1 className="text-5xl md:text-6xl font-black mt-6 drop-shadow-lg">Procurando <span className="text-green-400 underline decoration-yellow-500 decoration-4 underline-offset-8">{currentReqPos}</span></h1></div><div className="flex justify-center gap-6 md:gap-12 flex-wrap perspective-1000">{draftOptions.map(p => <PlayerCard key={p.id} player={p} onClick={pickPlayer} />)}</div></div>
                 ) : (
-                  <div className="text-center glass p-16 rounded-[3rem] border border-green-500 max-w-2xl w-full text-white">
-                    <i className="fa-solid fa-circle-check text-8xl text-green-400 mb-8"></i>
-                    <h2 className="text-5xl font-black mb-4">Equipe Assinada!</h2>
-                    <p className="text-2xl text-gray-300 font-medium mb-10">OVR Médio: <span className="text-yellow-400 font-black text-5xl">{myPlayerStatus?.overall || '--'}</span></p>
-
-                    <div className="bg-black/40 p-6 rounded-2xl mb-8 text-left border border-white/10">
-                       <h3 className="text-green-500 font-bold uppercase mb-4">Status da Sala</h3>
-                       {Object.entries(roomData?.players||{}).map(([uid, p]) => (
-                         <div key={uid} className="flex justify-between border-b border-white/5 py-2">
-                           <span>{p.name}</span>
-                           {p.isReady ? <span className="text-green-400 font-bold"><i className="fa-solid fa-check"></i> Pronto</span> : <span className="text-yellow-500 animate-pulse">Draftando...</span>}
-                         </div>
-                       ))}
-                    </div>
-
-                    {isHost && allReady ? (
-                      <button onClick={()=>db.ref(`games/${APP_ID}/${roomId}`).update({status:'tactics'})} className="w-full bg-yellow-500 text-black font-black py-5 rounded-xl text-2xl">DEFINIR TÁTICA</button>
-                    ) : (
-                      <div className="text-yellow-400 font-bold text-xl animate-pulse">Aguardando todos finalizarem...</div>
-                    )}
-                  </div>
+                  <div className="z-10 text-center glass p-16 rounded-[3rem] border-2 border-green-500 animate-slide-up max-w-2xl w-full relative"><i className="fa-solid fa-circle-check text-8xl text-green-400 drop-shadow-[0_0_40px_rgba(74,222,128,0.6)] mb-8"></i><h2 className="text-5xl font-black mb-4 tracking-tight">Equipe Assinada!</h2><p className="text-2xl text-gray-300 font-medium mb-10 flex items-center justify-center gap-4">OVR c/ Entrosamento: <span className="text-yellow-400 font-black text-5xl drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]">{myPlayerStatus?.overall || '--'}</span></p><div className="bg-black/40 p-6 rounded-2xl border border-white/10 mb-8 text-left"><h3 className="text-green-500 font-bold uppercase tracking-widest text-xs mb-4">Status da Sala</h3>{Object.entries(roomData?.players||{}).map(([uid, p]) => (<div key={uid} className="flex justify-between items-center border-b border-white/5 py-2 last:border-0"><span className="font-semibold text-gray-300">{p.name}</span>{p.isReady ? <span className="text-green-400 font-bold text-sm"><i className="fa-solid fa-check mr-1"></i> Pronto</span> : <span className="text-yellow-500 font-bold text-sm animate-pulse">Draftando...</span>}</div>))}</div>{isHost && allReady ? (<button onClick={()=>db.ref(`games/${APP_ID}/${roomId}`).update({status:'tactics'})} className="w-full bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-black py-5 rounded-xl text-2xl shadow-[0_0_30px_rgba(250,204,21,0.5)] hover:scale-105 transition"><i className="fa-solid fa-brain mr-3"></i> DEFINIR POSTURA TÁTICA</button>) : isHost ? (<div className="p-4 border border-dashed border-gray-600 rounded-xl text-gray-400 font-bold">Aguardando...</div>) : (<div className="text-yellow-400 font-bold text-xl animate-pulse">Aguardando Host...</div>)}</div>
                 )}
              </div>
           </div>
         )
       }
 
-      if (appState === 'TACTICS') {
-        return (
-          <div className="min-h-screen bg-pitch p-6 flex flex-col items-center justify-center">
-            <div className="glass p-12 rounded-[2rem] w-full max-w-3xl text-center border border-blue-600 text-white">
-              <i className="fa-solid fa-chess-knight text-7xl text-blue-400 mb-6"></i>
-              <h1 className="text-5xl font-black mb-4">Postura do Treinador</h1>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-                {Object.entries(TACTICS).map(([name, data]) => (
-                  <div key={name} onClick={()=>{SFX.click(); setTactic(name);}} className={`p-6 rounded-2xl cursor-pointer border-4 ${tactic === name ? 'bg-blue-900 border-blue-400' : 'bg-black/60 border-blue-950'}`}>
-                    <h3 className="font-black text-2xl mb-2">{name}</h3>
-                    <p className="text-xs">{data.desc}</p>
-                  </div>
-                ))}
-              </div>
-              
-              {!myPlayerStatus?.isReady ? (
-                <button onClick={confirmTactic} className="w-full bg-blue-500 text-white font-black py-5 rounded-xl text-2xl">TRAVAR TÁTICA</button>
-              ) : isHost && allReady ? (
-                <button onClick={createTournamentBracket} className="w-full bg-yellow-500 text-black font-black py-5 rounded-xl text-2xl">INICIAR CAMPEONATO</button>
-              ) : (
-                <div className="text-yellow-400 font-bold mt-6 animate-pulse">Aguardando Trava...</div>
-              )}
-            </div>
-          </div>
-        )
-      }
+      if (appState === 'TACTICS') return (
+        <div className="min-h-screen p-6 flex flex-col items-center justify-center pitch-bg"><div className="glass p-12 rounded-[2rem] w-full max-w-3xl text-center shadow-2xl border border-blue-600"><i className="fa-solid fa-chess-knight text-7xl text-blue-400 mb-6 drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]"></i><h1 className="text-5xl font-black mb-4 tracking-tighter">Postura do Treinador</h1><div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">{Object.entries(TACTICS).map(([name, data]) => (<div key={name} onClick={()=>{SFX.click(); setTactic(name);}} className={`p-6 rounded-2xl cursor-pointer border-4 transition-all duration-200 flex flex-col justify-center items-center ${tactic === name ? 'bg-blue-900 border-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.6)] scale-105' : 'bg-black/60 border-blue-950 text-gray-500 hover:border-blue-700 hover:text-white'}`}><h3 className="font-black text-2xl mb-2">{name}</h3></div>))}</div>{!myPlayerStatus?.isReady ? (<button onClick={confirmTactic} className="w-full bg-blue-500 text-white font-black py-5 rounded-xl text-2xl shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:bg-blue-400 transition"><i className="fa-solid fa-lock mr-3"></i> TRAVAR TÁTICA</button>) : isHost && allReady ? (<button onClick={generateTournamentBracket} className="w-full bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-black py-5 rounded-xl text-2xl shadow-[0_0_30px_rgba(250,204,21,0.5)] hover:scale-105 transition"><i className="fa-solid fa-play mr-3"></i> INICIAR CAMPEONATO</button>) : (<div className="text-yellow-400 font-bold text-xl animate-pulse mt-6">Aguardando todos travarem...</div>)}</div></div>
+      );
 
       if (appState === 'TOURNAMENT') {
         const stageKey = roomData?.stage === 1 ? 'quarters' : roomData?.stage === 2 ? 'semis' : 'final';
@@ -835,46 +765,25 @@
         const myMatch = activeMatches.find(m => m.p1.uid === user.uid || m.p2.uid === user.uid);
 
         return (
-          <div className="min-h-screen bg-[#020803] p-8 text-white">
-            <div className="max-w-7xl mx-auto">
-              <div className="flex justify-between items-center mb-8 glass p-6 rounded-2xl border border-green-800/50">
-                <div>
-                  <h1 className="text-3xl font-black text-yellow-400">COPA DRAFT KINGS</h1>
-                  <p className="text-green-500 font-bold mt-1 uppercase">FASE: {stageKey}</p>
-                </div>
-                {isHost && roomData?.stage < 4 && !activeMatches[0]?.played && (
-                  <button onClick={simulateMatches} className="bg-red-600 text-white font-black py-4 px-10 rounded-xl border border-red-400">INICIAR SIMULAÇÃO</button>
-                )}
+          <div className="min-h-screen bg-[#020803] p-4 md:p-8 text-white relative font-sans pitch-bg">
+            <div className="max-w-7xl mx-auto relative z-10">
+              <div className="flex flex-col md:flex-row justify-between items-center mb-8 glass p-6 rounded-2xl border border-green-800/50 shadow-2xl">
+                <div className="text-center md:text-left mb-4 md:mb-0"><h1 className="text-3xl font-black text-yellow-400 flex items-center gap-3 tracking-tighter uppercase"><i className="fa-solid fa-trophy text-4xl"></i> {roomData?.mode === '1v1' ? 'DUELO' : 'COPA DRAFT KINGS'}</h1><p className="text-green-500 font-bold tracking-widest text-sm mt-1 uppercase">FASE: {stageKey}</p></div>
+                {isHost && roomData?.stage < 4 && !activeMatches[0]?.played && (<button onClick={simulateMatches} className="bg-red-600 hover:bg-red-500 text-white font-black py-4 px-10 rounded-xl shadow-[0_0_30px_rgba(220,38,38,0.5)] transition-all hover:scale-105 border border-red-400 text-xl"><i className="fa-solid fa-bolt mr-2"></i> INICIAR SIMULAÇÃO</button>)}
+                {!isHost && roomData?.stage < 4 && !activeMatches[0]?.played && (<div className="bg-black/50 px-6 py-3 rounded-lg border border-yellow-500/30 text-yellow-400 font-bold animate-pulse">Aguardando Host...</div>)}
               </div>
 
               {roomData?.stage === 4 ? (
-                <div className="text-center mt-32">
-                  <i className="fa-solid fa-crown text-[150px] text-yellow-400 animate-bounce"></i>
-                  <h1 className="text-7xl font-black text-yellow-400 mt-8">{roomData.bracket.final[0].winner.name}</h1>
-                  <h2 className="text-3xl mt-4">CAMPEÃO!</h2>
-                </div>
+                <div className="text-center mt-32 animate-slide-up"><i className="fa-solid fa-crown text-[150px] text-yellow-400 drop-shadow-[0_0_50px_rgba(250,204,21,0.8)] relative z-10 animate-bounce" style={{animationDuration:'3s'}}></i><h1 className="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-600 mt-8 tracking-tighter uppercase">{roomData.bracket.final[0].winner.name}</h1></div>
               ) : (
-                <div className="grid grid-cols-4 gap-8">
-                  <div className="col-span-3">
-                    {myMatch ? <MatchViewer match={myMatch} /> : activeMatches[0] ? <MatchViewer match={activeMatches[0]} /> : null}
-                  </div>
-                  <div className="space-y-4">
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                  <div className="lg:col-span-3">{myMatch ? <MatchViewer3D match={myMatch} /> : activeMatches[0] ? <MatchViewer3D match={activeMatches[0]} /> : null}</div>
+                  <div className="flex flex-col gap-4"><h3 className="text-green-500 font-black mb-2 uppercase text-sm tracking-widest bg-green-900/30 p-3 rounded-lg border border-green-800/50 text-center"><i className="fa-solid fa-list-ol mr-2"></i> Visão Geral da Fase</h3><div className="space-y-4 overflow-y-auto max-h-[500px] pr-2">
                     {activeMatches.map((m, i) => {
-                      const isOver = m.played && (Date.now() - m.startTime > 30000);
-                      return (
-                       <div key={i} className="glass p-4 rounded-xl border border-green-800/50">
-                         <div className="flex justify-between mb-2">
-                           <span className={isOver && m.winner.uid===m.p1.uid ? 'text-yellow-400 font-bold' : ''}>{m.p1.name}</span>
-                           <span className="font-black bg-black px-2">{isOver ? m.s1 : '-'}</span>
-                         </div>
-                         <div className="flex justify-between">
-                           <span className={isOver && m.winner.uid===m.p2.uid ? 'text-yellow-400 font-bold' : ''}>{m.p2.name}</span>
-                           <span className="font-black bg-black px-2">{isOver ? m.s2 : '-'}</span>
-                         </div>
-                       </div>
-                      )
+                       const isMatchOver = m.played && (Date.now() - m.startTime > 30000);
+                       return (<div key={i} className="glass p-4 rounded-xl border border-green-800/50 flex flex-col justify-center shadow-lg relative overflow-hidden group">{isMatchOver && m.winner.uid === m.p1.uid && <div className="absolute top-0 left-0 w-1.5 h-full bg-yellow-400 shadow-[0_0_10px_rgba(250,204,21,1)]"></div>}<div className="flex justify-between items-center mb-2"><span className={`font-bold text-sm truncate pr-2 ${isMatchOver && m.winner.uid===m.p1.uid ? 'text-white' : 'text-gray-400'}`}>{m.p1.name}</span><span className="font-black bg-black/80 px-3 py-1 rounded text-lg min-w-[36px] text-center border border-white/5">{isMatchOver ? m.s1 : '-'}</span></div>{isMatchOver && m.winner.uid === m.p2.uid && <div className="absolute top-0 left-0 w-1.5 h-full bg-yellow-400 shadow-[0_0_10px_rgba(250,204,21,1)]"></div>}<div className="flex justify-between items-center"><span className={`font-bold text-sm truncate pr-2 ${isMatchOver && m.winner.uid===m.p2.uid ? 'text-white' : 'text-gray-400'}`}>{m.p2.name}</span><span className="font-black bg-black/80 px-3 py-1 rounded text-lg min-w-[36px] text-center border border-white/5">{isMatchOver ? m.s2 : '-'}</span></div></div>)
                     })}
-                  </div>
+                  </div></div>
                 </div>
               )}
             </div>
