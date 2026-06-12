@@ -59,7 +59,7 @@
     .card-3d:hover { transform: scale(1.05) translateY(-10px) rotateX(10deg); box-shadow: 0 30px 50px rgba(0,0,0,0.9); z-index: 50; }
     .card-flare { background: linear-gradient(135deg, rgba(255,255,255,0.6) 0%, transparent 50%); mix-blend-mode: overlay; pointer-events: none; }
     .momentum-bar { transition: width 0.3s linear; }
-    canvas { display: block; width: 100%; height: 100%; outline: none; }
+    canvas { display: block; width: 100%; height: 100%; outline: none; pointer-events: none; }
     ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #000; } ::-webkit-scrollbar-thumb { background: #166534; border-radius: 10px; }
   </style>
 </head>
@@ -69,7 +69,7 @@
   <script type="text/babel">
     const { useState, useEffect, useRef } = React;
 
-    //    const SFX = {
+    const SFX = {
       ready: false, synth: null, kick: null, noise: null,
       init: async () => {
         if(SFX.ready) return;
@@ -99,7 +99,7 @@
       }
     };
 
-    //    firebase.initializeApp({
+    firebase.initializeApp({
       apiKey: "AIzaSyBhFf89G1chtLnX73oNujjJTtuMMcqnQWQ",
       authDomain: "game-resenha.firebaseapp.com",
       projectId: "game-resenha",
@@ -109,14 +109,13 @@
     });
     const auth = firebase.auth();
     const db = firebase.database();
-    const APP_ID = 'draft-kings-goty-v5';
+    const APP_ID = 'draft-kings-goty-v6';
 
-    // Banco de Dados Limpo, Seguro e Nativo (Imune a erros de Parsing)
     const PLAYER_DATABASE = [
       { id: 'pele_70', baseId: 'pele', name: 'Pelé', year: 1970, team: 'Santos', overall: 99, pos: 'ATA' },
       { id: 'zico_81', baseId: 'zico', name: 'Zico', year: 1981, team: 'Flamengo', overall: 98, pos: 'MEI' },
       { id: 'romario_00', baseId: 'romario', name: 'Romário', year: 2000, team: 'Vasco', overall: 97, pos: 'ATA' },
-      { id: 'ronaldo_96', baseId: 'ronaldo', name: 'Ronaldo Fenômeno', year: 1996, team: 'Cruzeiro', overall: 97, pos: 'ATA' },
+      { id: 'ronaldo_96', baseId: 'ronaldo', name: 'Ronaldo', year: 1996, team: 'Cruzeiro', overall: 97, pos: 'ATA' },
       { id: 'neymar_11', baseId: 'neymar', name: 'Neymar Jr', year: 2011, team: 'Santos', overall: 96, pos: 'PON' },
       { id: 'rcarlos_10', baseId: 'rcarlos', name: 'Roberto Carlos', year: 2010, team: 'Corinthians', overall: 93, pos: 'LAT' },
       { id: 'cafu_93', baseId: 'cafu', name: 'Cafu', year: 1993, team: 'São Paulo', overall: 94, pos: 'LAT' },
@@ -140,7 +139,6 @@
       { id: 'kaka_02', baseId: 'kaka', name: 'Kaká', year: 2002, team: 'São Paulo', overall: 92, pos: 'MEI' },
       { id: 'alex_03', baseId: 'alex', name: 'Alex', year: 2003, team: 'Cruzeiro', overall: 95, pos: 'MEI' },
       { id: 'r10_11', baseId: 'r10', name: 'Ronaldinho', year: 2011, team: 'Flamengo', overall: 93, pos: 'MEI' },
-      { id: 'r10_13', baseId: 'r10', name: 'Ronaldinho', year: 2013, team: 'Atlético-MG', overall: 94, pos: 'MEI' },
       { id: 'djalminha_96', baseId: 'djalminha', name: 'Djalminha', year: 1996, team: 'Palmeiras', overall: 92, pos: 'MEI' },
       { id: 'arrasca_19', baseId: 'arrasca', name: 'Arrascaeta', year: 2019, team: 'Flamengo', overall: 92, pos: 'MEI' },
       { id: 'everton_19', baseId: 'everton', name: 'Éverton Ribeiro', year: 2019, team: 'Flamengo', overall: 90, pos: 'MEI' },
@@ -176,7 +174,28 @@
       { id: 'weverton_20', baseId: 'weverton', name: 'Weverton', year: 2020, team: 'Palmeiras', overall: 89, pos: 'GOL' },
       { id: 'fabio_13', baseId: 'fabio', name: 'Fábio', year: 2013, team: 'Cruzeiro', overall: 90, pos: 'GOL' },
       { id: 'pedro_22', baseId: 'pedro', name: 'Pedro', year: 2022, team: 'Flamengo', overall: 89, pos: 'ATA' },
-      { id: 'cano_22', baseId: 'cano', name: 'Germán Cano', year: 2022, team: 'Fluminense', overall: 89, pos: 'ATA' }
+      { id: 'cano_22', baseId: 'cano', name: 'Germán Cano', year: 2022, team: 'Fluminense', overall: 89, pos: 'ATA' },
+      // Lendas Secundárias / Bagres para dar volume
+      { id: 'obina_09', baseId: 'obina', name: 'Obina', year: 2009, team: 'Palmeiras', overall: 80, pos: 'ATA' },
+      { id: 'valdivia_08', baseId: 'valdivia', name: 'Valdívia', year: 2008, team: 'Palmeiras', overall: 89, pos: 'MEI' },
+      { id: 'kleber_08', baseId: 'kleber', name: 'Kleber', year: 2008, team: 'Palmeiras', overall: 86, pos: 'ATA' },
+      { id: 'guerrero_15', baseId: 'guerrero', name: 'Guerrero', year: 2015, team: 'Corinthians', overall: 88, pos: 'ATA' },
+      { id: 'calleri_16', baseId: 'calleri', name: 'Calleri', year: 2016, team: 'São Paulo', overall: 87, pos: 'ATA' },
+      { id: 'arana_17', baseId: 'arana', name: 'G. Arana', year: 2017, team: 'Corinthians', overall: 86, pos: 'LAT' },
+      { id: 'danilo_12', baseId: 'danilo', name: 'Danilo', year: 2012, team: 'Corinthians', overall: 88, pos: 'MEI' },
+      { id: 'marcelinho_99', baseId: 'marcelinho', name: 'Marcelinho', year: 1999, team: 'Corinthians', overall: 92, pos: 'MEI' },
+      { id: 'edilson_99', baseId: 'edilson', name: 'Edílson', year: 1999, team: 'Corinthians', overall: 90, pos: 'ATA' },
+      { id: 'evair_99', baseId: 'evair', name: 'Evair', year: 1999, team: 'Palmeiras', overall: 89, pos: 'ATA' },
+      { id: 'tche_16', baseId: 'tche', name: 'Tchê Tchê', year: 2016, team: 'Palmeiras', overall: 84, pos: 'VOL' },
+      { id: 'prass_15', baseId: 'prass', name: 'F. Prass', year: 2015, team: 'Palmeiras', overall: 88, pos: 'GOL' },
+      { id: 'victor_13', baseId: 'victor', name: 'Victor', year: 2013, team: 'Atlético-MG', overall: 89, pos: 'GOL' },
+      { id: 'grohe_17', baseId: 'grohe', name: 'M. Grohe', year: 2017, team: 'Grêmio', overall: 89, pos: 'GOL' },
+      { id: 'gil_15', baseId: 'gil', name: 'Gil', year: 2015, team: 'Corinthians', overall: 88, pos: 'ZAG' },
+      { id: 'balbuena_15', baseId: 'balbuena', name: 'Balbuena', year: 2015, team: 'Corinthians', overall: 87, pos: 'ZAG' },
+      { id: 'yago_pikachu_18', baseId: 'pikachu', name: 'Yago Pikachu', year: 2018, team: 'Vasco', overall: 84, pos: 'LAT' },
+      { id: 'nino_paraiba_19', baseId: 'nino', name: 'Nino Paraíba', year: 2019, team: 'Bahia', overall: 81, pos: 'LAT' },
+      { id: 'tcheco_06', baseId: 'tcheco', name: 'Tcheco', year: 2006, team: 'Grêmio', overall: 85, pos: 'MEI' },
+      { id: 'magrao_08', baseId: 'magrao', name: 'Magrão', year: 2008, team: 'Sport', overall: 86, pos: 'GOL' }
     ];
 
     const FORMATIONS = {
@@ -187,14 +206,14 @@
     };
 
     const TACTICS = {
-      'Kamikaze': { desc: 'Ataque total. Defesa exposta.', atkMod: 1.3, defMod: 0.7 },
+      'Kamikaze': { desc: 'Ataque total. Defesa exposta.', atkMod: 1.4, defMod: 0.7 },
       'Equilibrado': { desc: 'Posicionamento padrão.', atkMod: 1.0, defMod: 1.0 },
-      'Retranca': { desc: 'Ônibus na zaga. Foco em contra-ataques.', atkMod: 0.7, defMod: 1.3 }
+      'Retranca': { desc: 'Ônibus na zaga. Foco em contra-ataques.', atkMod: 0.6, defMod: 1.4 }
     };
 
     const BOT_NAMES = ["Íbis SC", "Tabajara FC", "Bot Bagre", "Super Campeões", "Time do CPU", "Galácticos FC", "Amigos do Neymar", "Resenha FC"];
 
-    //    const PlayerCard = ({ player, onClick, hidden = false }) => {
+    const PlayerCard = ({ player, onClick, hidden = false }) => {
       if (!player) return <div className="w-40 h-56 border-2 border-dashed border-white/20 rounded-xl bg-black/40 flex items-center justify-center text-gray-600 font-bold"><i className="fa-solid fa-user-secret text-4xl"></i></div>;
       
       let rarity = 'from-stone-600 to-stone-800 border-stone-500 text-stone-100'; 
@@ -218,7 +237,7 @@
       );
     };
 
-    //    const MatchViewer3D = ({ match }) => {
+    const MatchViewer3D = ({ match }) => {
       const mountRef = useRef(null);
       const [localMin, setLocalMin] = useState(0);
       const [events, setEvents] = useState([]);
@@ -279,6 +298,7 @@
         ball.position.set(0, 0.5, 0);
         scene.add(ball);
 
+        // Object Pooling for VFX (Zero Latency Explosions)
         const particleCount = 40;
         const particles = new THREE.InstancedMesh(
           new THREE.BoxGeometry(0.3, 0.3, 0.3),
@@ -303,7 +323,11 @@
             pVelocities[i].set((Math.random()-0.5)*0.5, Math.random()*0.5, (Math.random()-0.5)*0.5);
           }
           particles.instanceMatrix.needsUpdate = true;
-          setTimeout(() => { isExploding = false; for(let i=0; i<particleCount; i++) particles.setMatrixAt(i, new THREE.Matrix4().makeScale(0,0,0)); particles.instanceMatrix.needsUpdate = true; }, 1500);
+          setTimeout(() => { 
+            isExploding = false; 
+            for(let i=0; i<particleCount; i++) particles.setMatrixAt(i, new THREE.Matrix4().makeScale(0,0,0)); 
+            particles.instanceMatrix.needsUpdate = true; 
+          }, 1500);
         };
 
         const msPerMin = 333; 
@@ -347,6 +371,7 @@
 
             if (currentVirtualMin >= 90) { targetZ = 0; targetX = 0; }
 
+            // LERP Physics
             ball.position.z += (targetZ - ball.position.z) * 0.05;
             ball.position.x += (targetX - ball.position.x) * 0.05;
             ball.position.y = 0.5 + Math.abs(Math.sin(currentVirtualMin * 2)) * 1.5;
@@ -356,7 +381,7 @@
                 particles.getMatrixAt(i, dummy.matrix);
                 dummy.position.setFromMatrixPosition(dummy.matrix);
                 dummy.position.add(pVelocities[i]);
-                pVelocities[i].y -= 0.02; 
+                pVelocities[i].y -= 0.02; // Gravity
                 dummy.updateMatrix();
                 particles.setMatrixAt(i, dummy.matrix);
               }
@@ -382,10 +407,6 @@
           cancelAnimationFrame(animationId);
           if(mountRef.current) mountRef.current.innerHTML = '';
           renderer.dispose();
-          fieldGeo.dispose();
-          lineMat.dispose();
-          ballGeo.dispose();
-          ballMat.dispose();
         };
       }, [match]);
 
@@ -434,14 +455,14 @@
       );
     };
 
-    //    function App() {
+    function App() {
       const [user, setUser] = useState(null);
       const [isAuthLoading, setIsAuthLoading] = useState(true);
       const [playerName, setPlayerName] = useState('');
       const [appState, setAppState] = useState('INIT'); 
       const [roomData, setRoomData] = useState(null);
       const [roomId, setRoomId] = useState('');
-      const [gameMode, setGameMode] = useState('knockout'); 
+      const [gameMode, setGameMode] = useState('knockout'); // knockout, league, 1v1
       const [error, setError] = useState('');
       
       const [myFormation, setMyFormation] = useState('4-3-3');
@@ -457,7 +478,7 @@
             await auth.signInAnonymously();
           } catch(e) {
             console.error("Auth Fail:", e);
-            setError("Erro crítico ao conectar no servidor. Ative Login Anônimo.");
+            setError("Erro crítico de Firebase. Verifique o Login Anônimo.");
             setIsAuthLoading(false);
           }
         };
@@ -473,18 +494,22 @@
       useEffect(() => {
         if(!user || !roomId || appState === 'INIT' || appState === 'MENU') return;
         const roomRef = db.ref(`games/${APP_ID}/${roomId}`);
+        
         const listener = roomRef.on('value', snap => {
           if(snap.exists()) {
             const data = snap.val();
             setRoomData(data);
             
+            // Sync Gate / State Machine
             if(data.status === 'draft_setup' && appState === 'LOBBY') setAppState('DRAFT_SETUP');
             if(data.status === 'drafting' && appState === 'DRAFT_SETUP') setAppState('DRAFTING');
             if(data.status === 'tactics' && appState === 'DRAFTING') setAppState('TACTICS');
             if(data.status === 'tournament' && appState !== 'TOURNAMENT') setAppState('TOURNAMENT');
           } else {
+            // Room deleted or not found
             setAppState('MENU');
-            setError('A sala foi encerrada pelo Host.');
+            setRoomData(null);
+            setError('A sala não existe ou foi encerrada pelo Host.');
           }
         });
         return () => roomRef.off('value', listener);
@@ -503,9 +528,10 @@
         const snap = await roomRef.get();
         if(snap.exists()) return setError("Sala já existe. Escolha outro código.");
 
+        // Fix Firebase Array Crash: Enviar um array dummy [null] ou não enviar a chave 'team' vazia
         await roomRef.set({
           hostUid: user.uid, status: 'lobby', stage: 0, mode: gameMode,
-          players: { [user.uid]: { name: playerName, team: [], overall: 0, isReady: false, isBot: false, tactic: 'Equilibrado' } }
+          players: { [user.uid]: { name: playerName, overall: 0, isReady: false, isBot: false, tactic: 'Equilibrado' } }
         });
         setAppState('LOBBY');
       };
@@ -519,13 +545,14 @@
         const data = snap.val();
         if(data.status !== 'lobby') return setError("A partida já começou.");
         
-        await roomRef.update({ [`players/${user.uid}`]: { name: playerName, team: [], overall: 0, isReady: false, isBot: false, tactic: 'Equilibrado' } });
+        await roomRef.update({ [`players/${user.uid}`]: { name: playerName, overall: 0, isReady: false, isBot: false, tactic: 'Equilibrado' } });
         setAppState('LOBBY');
       };
 
       const pullPacks = (currentTeamLength) => {
         if (currentTeamLength >= 11) return;
         const requiredPos = FORMATIONS[myFormation][currentTeamLength];
+        
         let pool = PLAYER_DATABASE.filter(p => p.pos === requiredPos && !seenIds.current.has(p.baseId));
         let options = pool.sort(() => 0.5 - Math.random()).slice(0, 3);
         
@@ -556,7 +583,7 @@
         return chemBoost;
       };
 
-      //      const pickPlayer = async (player) => {
+      const pickPlayer = async (player) => {
         if (myTeam.length >= 11) return;
         
         if (player.overall >= 93) {
@@ -568,12 +595,11 @@
         const newTeam = [...myTeam, player];
         setMyTeam(newTeam); // Update local visual state
         
+        // Fix do 11/11: Verificação direta na memória local
         if (newTeam.length < 11) {
           pullPacks(newTeam.length);
         } else {
-          // Quando chegar no 11, fecha a porta de seleção visualmente
           setDraftOptions([]); 
-          
           const baseOvr = newTeam.reduce((acc, p) => acc + p.overall, 0) / 11;
           const chemOvr = calculateChemistry(newTeam);
           const finalOvr = Math.min(99, Math.round(baseOvr + chemOvr));
@@ -595,25 +621,46 @@
         SFX.click();
         const players = Object.entries(roomData?.players || {}).map(([uid, p]) => ({uid, ...p}));
         
+        // Define sizes based on Mode
         let targetSize = 8;
         if (roomData?.mode === '1v1') targetSize = 2;
-        else if (players.length <= 4) targetSize = 4;
+        else if (players.length <= 4 && roomData?.mode !== 'league') targetSize = 4;
         
         let bracketPlayers = [...players];
         let b = 0;
         while(bracketPlayers.length < targetSize) {
-          bracketPlayers.push({ uid: `bot_${b}`, name: BOT_NAMES[b%BOT_NAMES.length], overall: 75 + Math.floor(Math.random()*15), isBot: true, tactic: 'Equilibrado', team: [] });
+          bracketPlayers.push({ uid: `bot_${b}`, name: BOT_NAMES[b%BOT_NAMES.length], overall: 75 + Math.floor(Math.random()*15), isBot: true, tactic: 'Equilibrado' });
           b++;
         }
         bracketPlayers.sort(() => 0.5 - Math.random());
 
-        let matches = [];
-        for(let i=0; i<targetSize; i+=2) {
-           matches.push({ p1: bracketPlayers[i], p2: bracketPlayers[i+1], played: false, events: [] });
+        const updates = { status: 'tournament' };
+
+        if (roomData?.mode === 'league') {
+           // Round Robin Logic (Liga)
+           let standings = {};
+           bracketPlayers.forEach(p => standings[p.uid] = { name: p.name, pts: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, gd: 0 });
+           
+           // Simple 1-round logic for MVP (everyone plays everyone once)
+           // For 8 players = 7 rounds. We will store pairs for round 1.
+           let matches = [];
+           for(let i=0; i<targetSize; i+=2) {
+             matches.push({ p1: bracketPlayers[i], p2: bracketPlayers[i+1], played: false, events: [] });
+           }
+           updates.stage = 1; // Round 1
+           updates['bracket/league_matches'] = matches;
+           updates['bracket/standings'] = standings;
+        } else {
+           // Knockout Logic (Mata-Mata ou X1)
+           let matches = [];
+           for(let i=0; i<targetSize; i+=2) {
+             matches.push({ p1: bracketPlayers[i], p2: bracketPlayers[i+1], played: false, events: [] });
+           }
+           let stageName = targetSize === 8 ? 'quarters' : targetSize === 4 ? 'semis' : 'final';
+           updates.stage = targetSize === 8 ? 1 : targetSize === 4 ? 2 : 3;
+           updates[`bracket/${stageName}`] = matches;
         }
-        let stageName = targetSize === 8 ? 'quarters' : targetSize === 4 ? 'semis' : 'final';
-        
-        const updates = { status: 'tournament', stage: targetSize === 8 ? 1 : targetSize === 4 ? 2 : 3, [`bracket/${stageName}`]: matches };
+
         players.forEach(p => { updates[`players/${p.uid}/isReady`] = false; });
         await db.ref(`games/${APP_ID}/${roomId}`).update(updates);
       };
@@ -621,9 +668,12 @@
       const simulateMatches = async () => {
         SFX.click();
         const startTime = Date.now() + 1500; 
-        const stageKey = roomData?.stage === 1 ? 'quarters' : roomData?.stage === 2 ? 'semis' : 'final';
+        
+        let stageKey = '';
+        if (roomData?.mode === 'league') stageKey = 'league_matches';
+        else stageKey = roomData?.stage === 1 ? 'quarters' : roomData?.stage === 2 ? 'semis' : 'final';
+        
         const matchesToSim = roomData?.bracket?.[stageKey] || [];
-
         if (matchesToSim.length === 0) return;
 
         const simulatedMatches = matchesToSim.map(match => {
@@ -674,28 +724,48 @@
              }
            }
 
-           if (s1 === s2) {
+           if (s1 === s2 && roomData?.mode !== 'league') {
              events.push({ minute: 90, type: 'info', text: 'Tudo igual. Vamos para as cobranças de pênaltis!' });
              if(Math.random() > 0.5) { s1++; events.push({ minute: 90, type: 'goal', teamId: match.p1.uid, text: `${match.p1.name} VENCE NOS PÊNALTIS!` }); }
              else { s2++; events.push({ minute: 90, type: 'goal', teamId: match.p2.uid, text: `${match.p2.name} VENCE NOS PÊNALTIS!` }); }
            }
            
            events.push({ minute: 90, type: 'info', text: 'Apita o árbitro! Fim de papo.' });
-           return { ...match, startTime, played: true, events, momentumData, s1, s2, winner: s1>s2 ? match.p1 : match.p2 };
+           
+           let winner = null;
+           if (s1 > s2) winner = match.p1;
+           else if (s2 > s1) winner = match.p2;
+           
+           return { ...match, startTime, played: true, events, momentumData, s1, s2, winner };
         });
 
         await db.ref(`games/${APP_ID}/${roomId}/bracket/${stageKey}`).set(simulatedMatches);
         
+        // Callback Final
         setTimeout(async () => {
-           const nextStage = roomData?.stage === 1 ? 'semis' : roomData?.stage === 2 ? 'final' : 'campeao';
-           if (nextStage !== 'campeao') {
-             let nextMatches = [];
-             for(let i=0; i<simulatedMatches.length; i+=2) {
-               nextMatches.push({ p1: simulatedMatches[i].winner, p2: simulatedMatches[i+1].winner, played: false, events: [] });
-             }
-             await db.ref(`games/${APP_ID}/${roomId}`).update({ [`bracket/${nextStage}`]: nextMatches, stage: (roomData?.stage || 1) + 1 });
+           if (roomData?.mode === 'league') {
+              // Atualiza Tabela (Simplificado para 1 rodada no MVP)
+              const std = roomData.bracket.standings || {};
+              simulatedMatches.forEach(m => {
+                 if(m.s1 > m.s2) { std[m.p1.uid].pts+=3; std[m.p1.uid].w++; std[m.p2.uid].l++; }
+                 else if(m.s2 > m.s1) { std[m.p2.uid].pts+=3; std[m.p2.uid].w++; std[m.p1.uid].l++; }
+                 else { std[m.p1.uid].pts++; std[m.p2.uid].pts++; std[m.p1.uid].d++; std[m.p2.uid].d++; }
+                 
+                 std[m.p1.uid].gf += m.s1; std[m.p1.uid].ga += m.s2; std[m.p1.uid].gd = std[m.p1.uid].gf - std[m.p1.uid].ga;
+                 std[m.p2.uid].gf += m.s2; std[m.p2.uid].ga += m.s1; std[m.p2.uid].gd = std[m.p2.uid].gf - std[m.p2.uid].ga;
+              });
+              await db.ref(`games/${APP_ID}/${roomId}`).update({ ['bracket/standings']: std, stage: 4 }); // Fim
            } else {
-             await db.ref(`games/${APP_ID}/${roomId}`).update({ stage: 4 }); 
+             const nextStage = roomData?.stage === 1 ? 'semis' : roomData?.stage === 2 ? 'final' : 'campeao';
+             if (nextStage !== 'campeao') {
+               let nextMatches = [];
+               for(let i=0; i<simulatedMatches.length; i+=2) {
+                 nextMatches.push({ p1: simulatedMatches[i].winner, p2: simulatedMatches[i+1].winner, played: false, events: [] });
+               }
+               await db.ref(`games/${APP_ID}/${roomId}`).update({ [`bracket/${nextStage}`]: nextMatches, stage: (roomData?.stage || 1) + 1 });
+             } else {
+               await db.ref(`games/${APP_ID}/${roomId}`).update({ stage: 4 }); 
+             }
            }
         }, 33000); 
       };
@@ -703,16 +773,17 @@
       // --- UI RENDER (States) ---
       if (isAuthLoading) return <div className="min-h-screen flex items-center justify-center bg-black text-green-500 font-black text-2xl animate-pulse"><i className="fa-solid fa-satellite-dish mr-3"></i> Conectando à Rede Neural...</div>;
       
-      if (appState === 'INIT') return <div className="min-h-screen flex items-center justify-center bg-black"><button onClick={initEngine} className="glass p-16 rounded-[3rem] flex flex-col items-center hover:scale-105 transition-all shadow-[0_0_80px_rgba(250,204,21,0.3)] border-2 border-yellow-500/50 group"><i className="fa-solid fa-power-off text-8xl text-yellow-500 mb-8 group-hover:animate-pulse"></i><h1 className="text-6xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-600 drop-shadow-lg">INICIALIZAR ENGINE 3D</h1></button></div>;
+      if (appState === 'INIT') return <div className="min-h-screen flex items-center justify-center bg-black"><button onClick={initEngine} className="glass p-16 rounded-[3rem] flex flex-col items-center hover:scale-105 transition-all shadow-[0_0_80px_rgba(250,204,21,0.3)] border-2 border-yellow-500/50 group"><i className="fa-solid fa-power-off text-8xl text-yellow-500 mb-8 group-hover:animate-pulse"></i><h1 className="text-6xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-600 drop-shadow-lg">INICIALIZAR ENGINE 3D</h1><p className="text-gray-400 mt-6 font-bold uppercase tracking-widest">Habilita Som e WebGL</p></button></div>;
       
       if (appState === 'MENU') return (
-        <div className="min-h-screen flex items-center justify-center pitch-bg p-4"><div className="glass p-10 rounded-3xl w-full max-w-md shadow-2xl animate-slide-up border border-green-500/30 relative overflow-hidden"><div className="text-center mb-10"><i className="fa-solid fa-trophy text-7xl text-yellow-400 drop-shadow-[0_0_30px_rgba(250,204,21,0.6)] mb-4 animate-pulse-fast"></i><h1 className="text-5xl font-black italic tracking-tighter text-white">DRAFT KINGS</h1></div><div className="space-y-5"><input className="w-full p-4 bg-black/60 rounded-xl text-white outline-none border-2 border-green-900 focus:border-yellow-400 font-bold transition text-lg" placeholder="Seu Nome" value={playerName} onChange={e=>setPlayerName(e.target.value)} /><div className="flex gap-3"><input className="w-full p-4 bg-black/60 rounded-xl text-white outline-none border-2 border-green-900 uppercase focus:border-yellow-400 font-black transition text-lg" placeholder="SALA" value={roomId} onChange={e=>setRoomId(e.target.value.toUpperCase())} /><select className="p-4 bg-black/60 rounded-xl text-white outline-none border-2 border-green-900 font-bold" value={gameMode} onChange={e=>setGameMode(e.target.value)}><option value="knockout">MATA-MATA</option><option value="1v1">DUELO X1</option></select></div>{error && <div className="text-red-400 font-black text-sm text-center bg-red-950/80 border border-red-500 p-3 rounded-xl shadow-lg">{error}</div>}<div className="pt-4 space-y-3"><button onClick={handleCreateRoom} className="w-full bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-black py-4 rounded-xl shadow-[0_0_20px_rgba(250,204,21,0.4)] hover:scale-[1.03] transition text-lg">FUNDAR LIGA</button><button onClick={handleJoinRoom} className="w-full border-2 border-green-600 text-green-400 hover:bg-green-600 hover:text-white font-black py-4 rounded-xl transition text-lg">ENTRAR NA LIGA</button></div></div></div></div>
+        <div className="min-h-screen flex items-center justify-center pitch-bg p-4"><div className="glass p-10 rounded-3xl w-full max-w-md shadow-2xl animate-slide-up border border-green-500/30 relative overflow-hidden"><div className="text-center mb-10"><i className="fa-solid fa-trophy text-7xl text-yellow-400 drop-shadow-[0_0_30px_rgba(250,204,21,0.6)] mb-4 animate-pulse-fast"></i><h1 className="text-5xl font-black italic tracking-tighter text-white">DRAFT KINGS</h1></div><div className="space-y-5"><input className="w-full p-4 bg-black/60 rounded-xl text-white outline-none border-2 border-green-900 focus:border-yellow-400 font-bold transition text-lg" placeholder="Seu Nome" value={playerName} onChange={e=>setPlayerName(e.target.value)} /><div className="flex gap-3"><input className="w-full p-4 bg-black/60 rounded-xl text-white outline-none border-2 border-green-900 uppercase focus:border-yellow-400 font-black transition text-lg" placeholder="SALA" value={roomId} onChange={e=>setRoomId(e.target.value.toUpperCase())} /><select className="p-4 bg-black/60 rounded-xl text-white outline-none border-2 border-green-900 font-bold" value={gameMode} onChange={e=>setGameMode(e.target.value)}><option value="knockout">MATA-MATA</option><option value="league">LIGA (PONTOS)</option><option value="1v1">DUELO X1</option></select></div>{error && <div className="text-red-400 font-black text-sm text-center bg-red-950/80 border border-red-500 p-3 rounded-xl shadow-lg">{error}</div>}<div className="pt-4 space-y-3"><button onClick={handleCreateRoom} className="w-full bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-black py-4 rounded-xl shadow-[0_0_20px_rgba(250,204,21,0.4)] hover:scale-[1.03] transition text-lg">FUNDAR LIGA</button><button onClick={handleJoinRoom} className="w-full border-2 border-green-600 text-green-400 hover:bg-green-600 hover:text-white font-black py-4 rounded-xl transition text-lg">ENTRAR NA LIGA</button></div></div></div></div>
       );
       
-      if (!roomData) return <div className="min-h-screen flex items-center justify-center pitch-bg text-yellow-500 font-black text-2xl"><div className="glass p-8 rounded-2xl flex items-center animate-pulse"><i className="fa-solid fa-network-wired mr-4 text-4xl"></i> Sincronizando...</div></div>;
+      // Sync Gate
+      if (!roomData && appState !== 'MENU') return <div className="min-h-screen flex items-center justify-center pitch-bg text-yellow-500 font-black text-2xl"><div className="glass p-8 rounded-2xl flex items-center animate-pulse"><i className="fa-solid fa-network-wired mr-4 text-4xl"></i> Sincronizando Rede...</div></div>;
       
       if (appState === 'LOBBY') return (
-        <div className="min-h-screen p-4 md:p-10 bg-green-950 flex flex-col items-center justify-center pitch-bg"><div className="glass p-8 md:p-12 rounded-[2rem] w-full max-w-5xl shadow-2xl animate-slide-up border border-green-800"><div className="flex flex-col md:flex-row justify-between items-center border-b-2 border-green-800/50 pb-6 mb-10"><div><h2 className="text-4xl md:text-5xl font-black">LOBBY <span className="text-yellow-400 font-mono tracking-tighter">{roomId}</span></h2></div><div className="bg-black/40 px-6 py-3 rounded-xl border border-green-900 mt-4 md:mt-0 font-bold">{Object.keys(roomData?.players||{}).length} / {roomData?.mode === '1v1' ? 2 : 8} Treinadores</div></div><div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-12">{Object.entries(roomData?.players||{}).map(([uid, p]) => (<div key={uid} className="bg-gradient-to-b from-green-900/50 to-black/50 p-6 rounded-2xl border border-green-700 flex flex-col items-center gap-4 shadow-lg"><div className={`w-16 h-16 rounded-full flex items-center justify-center shadow-inner text-2xl ${uid === roomData?.hostUid ? 'bg-yellow-500/20 border-2 border-yellow-500 text-yellow-400' : 'bg-green-800 border-2 border-green-600 text-green-300'}`}>{uid === roomData?.hostUid ? <i className="fa-solid fa-crown"></i> : <i className="fa-solid fa-user"></i>}</div><span className="font-black text-lg truncate w-full text-center tracking-tight">{p.name}</span></div>))}</div><div className="text-center bg-black/30 p-8 rounded-2xl border border-white/5">{isHost ? (<button onClick={()=>db.ref(`games/${APP_ID}/${roomId}`).update({status:'draft_setup'})} className="bg-yellow-500 text-black font-black px-12 py-5 rounded-xl text-2xl shadow-[0_0_30px_rgba(250,204,21,0.5)] hover:scale-105 transition w-full md:w-auto">PRANCHETA TÁTICA</button>) : (<div className="text-yellow-400 font-bold text-xl animate-pulse">Aguardando Host...</div>)}</div></div></div>
+        <div className="min-h-screen p-4 md:p-10 bg-green-950 flex flex-col items-center justify-center pitch-bg"><div className="glass p-8 md:p-12 rounded-[2rem] w-full max-w-5xl shadow-2xl animate-slide-up border border-green-800"><div className="flex flex-col md:flex-row justify-between items-center border-b-2 border-green-800/50 pb-6 mb-10"><div><h2 className="text-4xl md:text-5xl font-black">LOBBY <span className="text-yellow-400 font-mono tracking-tighter">{roomId}</span></h2><p className="text-green-400 mt-2 font-bold uppercase tracking-widest">{roomData?.mode === 'league' ? 'LIGA DE PONTOS' : roomData?.mode === '1v1' ? 'DUELO X1' : 'COPA ELIMINATÓRIA'}</p></div><div className="bg-black/40 px-6 py-3 rounded-xl border border-green-900 mt-4 md:mt-0 font-bold">{Object.keys(roomData?.players||{}).length} / {roomData?.mode === '1v1' ? 2 : 8} Treinadores</div></div><div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-12">{Object.entries(roomData?.players||{}).map(([uid, p]) => (<div key={uid} className="bg-gradient-to-b from-green-900/50 to-black/50 p-6 rounded-2xl border border-green-700 flex flex-col items-center gap-4 shadow-lg"><div className={`w-16 h-16 rounded-full flex items-center justify-center shadow-inner text-2xl ${uid === roomData?.hostUid ? 'bg-yellow-500/20 border-2 border-yellow-500 text-yellow-400' : 'bg-green-800 border-2 border-green-600 text-green-300'}`}>{uid === roomData?.hostUid ? <i className="fa-solid fa-crown"></i> : <i className="fa-solid fa-user"></i>}</div><span className="font-black text-lg truncate w-full text-center tracking-tight">{p.name}</span></div>))}</div><div className="text-center bg-black/30 p-8 rounded-2xl border border-white/5">{isHost ? (<button onClick={()=>db.ref(`games/${APP_ID}/${roomId}`).update({status:'draft_setup'})} className="bg-yellow-500 text-black font-black px-12 py-5 rounded-xl text-2xl shadow-[0_0_30px_rgba(250,204,21,0.5)] hover:scale-105 transition w-full md:w-auto">PRANCHETA TÁTICA</button>) : (<div className="text-yellow-400 font-bold text-xl animate-pulse">Aguardando Host...</div>)}</div></div></div>
       );
 
       if (appState === 'DRAFT_SETUP') return (
@@ -742,7 +813,8 @@
       );
 
       if (appState === 'TOURNAMENT') {
-        const stageKey = roomData?.stage === 1 ? 'quarters' : roomData?.stage === 2 ? 'semis' : 'final';
+        const isLeague = roomData?.mode === 'league';
+        const stageKey = isLeague ? 'league_matches' : roomData?.stage === 1 ? 'quarters' : roomData?.stage === 2 ? 'semis' : 'final';
         const activeMatches = roomData?.bracket ? roomData?.bracket[stageKey] || [] : [];
         const myMatch = activeMatches.find(m => m.p1.uid === user.uid || m.p2.uid === user.uid);
 
@@ -750,22 +822,40 @@
           <div className="min-h-screen bg-[#020803] p-4 md:p-8 text-white relative font-sans pitch-bg">
             <div className="max-w-7xl mx-auto relative z-10">
               <div className="flex flex-col md:flex-row justify-between items-center mb-8 glass p-6 rounded-2xl border border-green-800/50 shadow-2xl">
-                <div className="text-center md:text-left mb-4 md:mb-0"><h1 className="text-3xl font-black text-yellow-400 flex items-center gap-3 tracking-tighter uppercase"><i className="fa-solid fa-trophy text-4xl"></i> {roomData?.mode === '1v1' ? 'DUELO' : 'COPA DRAFT KINGS'}</h1><p className="text-green-500 font-bold tracking-widest text-sm mt-1 uppercase">FASE: {stageKey}</p></div>
+                <div className="text-center md:text-left mb-4 md:mb-0"><h1 className="text-3xl font-black text-yellow-400 flex items-center gap-3 tracking-tighter uppercase"><i className="fa-solid fa-trophy text-4xl"></i> {isLeague ? 'LIGA DRAFT KINGS' : roomData?.mode === '1v1' ? 'DUELO' : 'COPA DRAFT KINGS'}</h1><p className="text-green-500 font-bold tracking-widest text-sm mt-1 uppercase">FASE: {stageKey}</p></div>
                 {isHost && roomData?.stage < 4 && !activeMatches[0]?.played && (<button onClick={simulateMatches} className="bg-red-600 hover:bg-red-500 text-white font-black py-4 px-10 rounded-xl shadow-[0_0_30px_rgba(220,38,38,0.5)] transition-all hover:scale-105 border border-red-400 text-xl"><i className="fa-solid fa-bolt mr-2"></i> INICIAR SIMULAÇÃO</button>)}
                 {!isHost && roomData?.stage < 4 && !activeMatches[0]?.played && (<div className="bg-black/50 px-6 py-3 rounded-lg border border-yellow-500/30 text-yellow-400 font-bold animate-pulse">Aguardando Host...</div>)}
               </div>
 
               {roomData?.stage === 4 ? (
-                <div className="text-center mt-32 animate-slide-up"><i className="fa-solid fa-crown text-[150px] text-yellow-400 drop-shadow-[0_0_50px_rgba(250,204,21,0.8)] relative z-10 animate-bounce" style={{animationDuration:'3s'}}></i><h1 className="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-600 mt-8 tracking-tighter uppercase">{roomData.bracket.final[0].winner.name}</h1></div>
+                <div className="text-center mt-32 animate-slide-up"><i className="fa-solid fa-crown text-[150px] text-yellow-400 drop-shadow-[0_0_50px_rgba(250,204,21,0.8)] relative z-10 animate-bounce" style={{animationDuration:'3s'}}></i><h1 className="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-600 mt-8 tracking-tighter uppercase">{isLeague ? 'FIM DA LIGA' : roomData.bracket.final[0].winner.name}</h1></div>
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                   <div className="lg:col-span-3">{myMatch ? <MatchViewer3D match={myMatch} /> : activeMatches[0] ? <MatchViewer3D match={activeMatches[0]} /> : null}</div>
-                  <div className="flex flex-col gap-4"><h3 className="text-green-500 font-black mb-2 uppercase text-sm tracking-widest bg-green-900/30 p-3 rounded-lg border border-green-800/50 text-center"><i className="fa-solid fa-list-ol mr-2"></i> Visão Geral da Fase</h3><div className="space-y-4 overflow-y-auto max-h-[500px] pr-2">
-                    {activeMatches.map((m, i) => {
-                       const isMatchOver = m.played && (Date.now() - m.startTime > 30000);
-                       return (<div key={i} className="glass p-4 rounded-xl border border-green-800/50 flex flex-col justify-center shadow-lg relative overflow-hidden group">{isMatchOver && m.winner.uid === m.p1.uid && <div className="absolute top-0 left-0 w-1.5 h-full bg-yellow-400 shadow-[0_0_10px_rgba(250,204,21,1)]"></div>}<div className="flex justify-between items-center mb-2"><span className={`font-bold text-sm truncate pr-2 ${isMatchOver && m.winner.uid===m.p1.uid ? 'text-white' : 'text-gray-400'}`}>{m.p1.name}</span><span className="font-black bg-black/80 px-3 py-1 rounded text-lg min-w-[36px] text-center border border-white/5">{isMatchOver ? m.s1 : '-'}</span></div>{isMatchOver && m.winner.uid === m.p2.uid && <div className="absolute top-0 left-0 w-1.5 h-full bg-yellow-400 shadow-[0_0_10px_rgba(250,204,21,1)]"></div>}<div className="flex justify-between items-center"><span className={`font-bold text-sm truncate pr-2 ${isMatchOver && m.winner.uid===m.p2.uid ? 'text-white' : 'text-gray-400'}`}>{m.p2.name}</span><span className="font-black bg-black/80 px-3 py-1 rounded text-lg min-w-[36px] text-center border border-white/5">{isMatchOver ? m.s2 : '-'}</span></div></div>)
-                    })}
-                  </div></div>
+                  
+                  <div className="flex flex-col gap-4">
+                    {isLeague && roomData.bracket.standings && (
+                      <div className="glass p-4 rounded-xl border border-blue-800/50 mb-4">
+                        <h3 className="text-blue-400 font-black text-center mb-2 uppercase tracking-widest text-sm">Classificação</h3>
+                        <div className="space-y-1">
+                          {Object.values(roomData.bracket.standings).sort((a,b) => b.pts - a.pts || b.gd - a.gd).map((t, i) => (
+                             <div key={i} className="flex justify-between text-sm bg-black/40 p-1 px-2 rounded">
+                                <span className="truncate w-24 font-bold">{i+1}. {t.name}</span>
+                                <span className="text-yellow-400 font-black">{t.pts}</span>
+                             </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  
+                    <h3 className="text-green-500 font-black mb-2 uppercase text-sm tracking-widest bg-green-900/30 p-3 rounded-lg border border-green-800/50 text-center"><i className="fa-solid fa-list-ol mr-2"></i> Visão Geral da Fase</h3>
+                    <div className="space-y-4 overflow-y-auto max-h-[500px] pr-2">
+                      {activeMatches.map((m, i) => {
+                         const isMatchOver = m.played && (Date.now() - m.startTime > 30000);
+                         return (<div key={i} className="glass p-4 rounded-xl border border-green-800/50 flex flex-col justify-center shadow-lg relative overflow-hidden group">{isMatchOver && m.winner?.uid === m.p1.uid && <div className="absolute top-0 left-0 w-1.5 h-full bg-yellow-400 shadow-[0_0_10px_rgba(250,204,21,1)]"></div>}<div className="flex justify-between items-center mb-2"><span className={`font-bold text-sm truncate pr-2 ${isMatchOver && m.winner?.uid===m.p1.uid ? 'text-white' : 'text-gray-400'}`}>{m.p1.name}</span><span className="font-black bg-black/80 px-3 py-1 rounded text-lg min-w-[36px] text-center border border-white/5">{isMatchOver ? m.s1 : '-'}</span></div>{isMatchOver && m.winner?.uid === m.p2.uid && <div className="absolute top-0 left-0 w-1.5 h-full bg-yellow-400 shadow-[0_0_10px_rgba(250,204,21,1)]"></div>}<div className="flex justify-between items-center"><span className={`font-bold text-sm truncate pr-2 ${isMatchOver && m.winner?.uid===m.p2.uid ? 'text-white' : 'text-gray-400'}`}>{m.p2.name}</span><span className="font-black bg-black/80 px-3 py-1 rounded text-lg min-w-[36px] text-center border border-white/5">{isMatchOver ? m.s2 : '-'}</span></div></div>)
+                      })}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
