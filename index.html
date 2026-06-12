@@ -347,10 +347,11 @@
         const newTeam = [...myTeam, player];
         setMyTeam(newTeam);
         
-        if (draftStep < 10) {
+        if (newTeam.length < 11) {
           setDraftStep(prev => prev + 1);
           pullPacks(draftStep + 1);
         } else {
+          setDraftStep(11);
           setDraftOptions([]);
           const avgOvr = Math.round(newTeam.reduce((acc, p) => acc + p.overall, 0) / 11);
           await db.ref(`games/${APP_ID}/${roomId}/players/${user.uid}`).update({
@@ -530,8 +531,8 @@
       }
 
       if (appState === 'DRAFTING') {
-        const currentReqPos = FORMATIONS[myFormation][draftStep];
-        const isFinished = draftStep >= 11;
+        const currentReqPos = FORMATIONS[myFormation][draftStep] || '---';
+        const isFinished = myTeam.length >= 11;
         const myPlayerStatus = roomData?.players?.[user.uid];
         const allReady = Object.values(roomData?.players||{}).every(p => p.isReady);
 
