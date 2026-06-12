@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Brasfoot Draft Kings: GOTY 3D</title>
+  <title>Brasfoot Draft Kings: GOTY</title>
 
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -33,7 +33,7 @@
     tailwind.config = {
       theme: {
         extend: {
-          colors: { pitch: '#020a04', accent: '#ffcc00' },
+          colors: { pitch: '#05180a', accent: '#ffcc00' },
           animation: {
             'shake': 'shake 0.4s cubic-bezier(.36,.07,.19,.97) both',
             'flare': 'flare 1s ease-out forwards',
@@ -52,14 +52,14 @@
     }
   </script>
   <style>
-    body { background-color: #020803; color: white; font-family: system-ui, -apple-system, sans-serif; overflow-x: hidden; user-select: none; }
-    .glass { background: rgba(2, 10, 4, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(74, 222, 128, 0.15); box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
-    .pitch-bg { background-image: linear-gradient(rgba(74,222,128,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(74,222,128,0.03) 1px, transparent 1px); background-size: 30px 30px; box-shadow: inset 0 0 150px rgba(0,0,0,0.98); }
+    body { background-color: #030a04; color: white; font-family: system-ui, -apple-system, sans-serif; overflow-x: hidden; user-select: none; }
+    .glass { background: rgba(5, 24, 10, 0.9); backdrop-filter: blur(20px); border: 1px solid rgba(74, 222, 128, 0.2); }
+    .pitch-bg { background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 40px 40px; box-shadow: inset 0 0 150px rgba(0,0,0,0.95); }
     .card-3d { transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform-style: preserve-3d; cursor: pointer; }
-    .card-3d:hover { transform: scale(1.05) translateY(-10px) rotateX(10deg); box-shadow: 0 30px 50px rgba(0,0,0,0.9); z-index: 50; }
-    .card-flare { background: linear-gradient(135deg, rgba(255,255,255,0.6) 0%, transparent 50%); mix-blend-mode: overlay; pointer-events: none; }
-    .momentum-bar { transition: width 0.3s linear; }
-    canvas { display: block; width: 100%; height: 100%; outline: none; pointer-events: none; }
+    .card-3d:hover { transform: scale(1.08) translateY(-15px) rotateX(15deg); box-shadow: 0 30px 60px rgba(0,0,0,0.8); z-index: 50; }
+    .card-flare { background: linear-gradient(135deg, rgba(255,255,255,0.8) 0%, transparent 50%); mix-blend-mode: overlay; pointer-events: none; }
+    .momentum-bar { transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+    canvas { display: block; outline: none; border-radius: 12px; }
     ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #000; } ::-webkit-scrollbar-thumb { background: #166534; border-radius: 10px; }
   </style>
 </head>
@@ -67,15 +67,19 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useRef } = React;
+    const { useState, useEffect, useRef, useMemo } = React;
 
     const SFX = {
-      ready: false, synth: null, kick: null, noise: null,
+      ready: false, synth: null, kick: null, noise: null, whistleSynth: null,
       init: async () => {
         if(SFX.ready) return;
         await Tone.start();
         SFX.synth = new Tone.PolySynth(Tone.Synth).toDestination();
         SFX.synth.volume.value = -8;
+        
+        SFX.whistleSynth = new Tone.Synth({ oscillator: { type: "triangle" }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.5, release: 1 } }).toDestination();
+        SFX.whistleSynth.volume.value = -5;
+
         SFX.kick = new Tone.MembraneSynth({ pitchDecay: 0.05, octaves: 10, oscillator: { type: "sine" } }).toDestination();
         SFX.kick.volume.value = 6;
         const filter = new Tone.Filter(1000, "lowpass").toDestination();
@@ -90,7 +94,11 @@
         SFX.kick.triggerAttackRelease("C1", "1n");
         SFX.synth.triggerAttackRelease(["C3", "G3", "C4"], "1n");
       },
-      whistle: () => { if(SFX.ready){ SFX.synth.triggerAttackRelease("C6", "8n"); setTimeout(()=>SFX.synth.triggerAttackRelease("C6", "4n"), 200); } },
+      whistle: () => { 
+        if(!SFX.ready) return;
+        SFX.whistleSynth.triggerAttackRelease("C6", "16n"); 
+        setTimeout(()=>SFX.whistleSynth.triggerAttackRelease("C6", "8n"), 150); 
+      },
       goal: () => { 
         if(!SFX.ready) return;
         SFX.kick.triggerAttackRelease("C1", "2n"); 
@@ -99,104 +107,88 @@
       }
     };
 
-    firebase.initializeApp({
+    const myFirebaseConfig = {
       apiKey: "AIzaSyBhFf89G1chtLnX73oNujjJTtuMMcqnQWQ",
       authDomain: "game-resenha.firebaseapp.com",
       projectId: "game-resenha",
       storageBucket: "game-resenha.firebasestorage.app",
       messagingSenderId: "270816875",
       appId: "1:270816875:web:b5a11827a82263984c432e"
-    });
+    };
+
+    firebase.initializeApp(myFirebaseConfig);
     const auth = firebase.auth();
     const db = firebase.database();
-    const APP_ID = 'draft-kings-goty-v6';
+    const APP_ID = 'draft-kings-goty-v3';
 
-    const PLAYER_DATABASE = [
-      { id: 'pele_70', baseId: 'pele', name: 'Pelé', year: 1970, team: 'Santos', overall: 99, pos: 'ATA' },
-      { id: 'zico_81', baseId: 'zico', name: 'Zico', year: 1981, team: 'Flamengo', overall: 98, pos: 'MEI' },
-      { id: 'romario_00', baseId: 'romario', name: 'Romário', year: 2000, team: 'Vasco', overall: 97, pos: 'ATA' },
-      { id: 'ronaldo_96', baseId: 'ronaldo', name: 'Ronaldo', year: 1996, team: 'Cruzeiro', overall: 97, pos: 'ATA' },
-      { id: 'neymar_11', baseId: 'neymar', name: 'Neymar Jr', year: 2011, team: 'Santos', overall: 96, pos: 'PON' },
-      { id: 'rcarlos_10', baseId: 'rcarlos', name: 'Roberto Carlos', year: 2010, team: 'Corinthians', overall: 93, pos: 'LAT' },
-      { id: 'cafu_93', baseId: 'cafu', name: 'Cafu', year: 1993, team: 'São Paulo', overall: 94, pos: 'LAT' },
-      { id: 'ceni_05', baseId: 'ceni', name: 'Rogério Ceni', year: 2005, team: 'São Paulo', overall: 94, pos: 'GOL' },
-      { id: 'dida_99', baseId: 'dida', name: 'Dida', year: 1999, team: 'Corinthians', overall: 94, pos: 'GOL' },
-      { id: 'taffarel_98', baseId: 'taffarel', name: 'Taffarel', year: 1998, team: 'Atlético-MG', overall: 93, pos: 'GOL' },
-      { id: 'marcos_99', baseId: 'marcos', name: 'São Marcos', year: 1999, team: 'Palmeiras', overall: 94, pos: 'GOL' },
-      { id: 'cassio_12', baseId: 'cassio', name: 'Cássio', year: 2012, team: 'Corinthians', overall: 92, pos: 'GOL' },
-      { id: 'gamarra_98', baseId: 'gamarra', name: 'Gamarra', year: 1998, team: 'Corinthians', overall: 94, pos: 'ZAG' },
-      { id: 'aldair_95', baseId: 'aldair', name: 'Aldair', year: 1995, team: 'Roma', overall: 93, pos: 'ZAG' },
-      { id: 'lugano_05', baseId: 'lugano', name: 'Lugano', year: 2005, team: 'São Paulo', overall: 92, pos: 'ZAG' },
-      { id: 'gomez_20', baseId: 'gomez', name: 'Gustavo Gómez', year: 2020, team: 'Palmeiras', overall: 91, pos: 'ZAG' },
-      { id: 'tsilva_08', baseId: 'tsilva', name: 'Thiago Silva', year: 2008, team: 'Fluminense', overall: 92, pos: 'ZAG' },
-      { id: 'geromel_17', baseId: 'geromel', name: 'Geromel', year: 2017, team: 'Grêmio', overall: 91, pos: 'ZAG' },
-      { id: 'kannemann_17', baseId: 'kannemann', name: 'Kannemann', year: 2017, team: 'Grêmio', overall: 89, pos: 'ZAG' },
-      { id: 'msilva_94', baseId: 'msilva', name: 'Mauro Silva', year: 1994, team: 'Bragantino', overall: 93, pos: 'VOL' },
-      { id: 'dunga_99', baseId: 'dunga', name: 'Dunga', year: 1999, team: 'Inter', overall: 91, pos: 'VOL' },
-      { id: 'mineiro_05', baseId: 'mineiro', name: 'Mineiro', year: 2005, team: 'São Paulo', overall: 90, pos: 'VOL' },
-      { id: 'vampeta_99', baseId: 'vampeta', name: 'Vampeta', year: 1999, team: 'Corinthians', overall: 90, pos: 'VOL' },
-      { id: 'rincon_99', baseId: 'rincon', name: 'Rincón', year: 1999, team: 'Corinthians', overall: 91, pos: 'VOL' },
-      { id: 'kaka_02', baseId: 'kaka', name: 'Kaká', year: 2002, team: 'São Paulo', overall: 92, pos: 'MEI' },
-      { id: 'alex_03', baseId: 'alex', name: 'Alex', year: 2003, team: 'Cruzeiro', overall: 95, pos: 'MEI' },
-      { id: 'r10_11', baseId: 'r10', name: 'Ronaldinho', year: 2011, team: 'Flamengo', overall: 93, pos: 'MEI' },
-      { id: 'djalminha_96', baseId: 'djalminha', name: 'Djalminha', year: 1996, team: 'Palmeiras', overall: 92, pos: 'MEI' },
-      { id: 'arrasca_19', baseId: 'arrasca', name: 'Arrascaeta', year: 2019, team: 'Flamengo', overall: 92, pos: 'MEI' },
-      { id: 'everton_19', baseId: 'everton', name: 'Éverton Ribeiro', year: 2019, team: 'Flamengo', overall: 90, pos: 'MEI' },
-      { id: 'conca_10', baseId: 'conca', name: 'Conca', year: 2010, team: 'Fluminense', overall: 92, pos: 'MEI' },
-      { id: 'petkovic_09', baseId: 'petkovic', name: 'Petkovic', year: 2009, team: 'Flamengo', overall: 91, pos: 'MEI' },
-      { id: 'edmundo_97', baseId: 'edmundo', name: 'Edmundo', year: 1997, team: 'Vasco', overall: 96, pos: 'ATA' },
-      { id: 'adriano_09', baseId: 'adriano', name: 'Adriano Imp.', year: 2009, team: 'Flamengo', overall: 93, pos: 'ATA' },
-      { id: 'luis_fabiano_12', baseId: 'luis_fabiano', name: 'Luis Fabiano', year: 2012, team: 'São Paulo', overall: 89, pos: 'ATA' },
-      { id: 'bh_19', baseId: 'bh', name: 'Bruno Henrique', year: 2019, team: 'Flamengo', overall: 92, pos: 'PON' },
-      { id: 'gabigol_19', baseId: 'gabigol', name: 'Gabigol', year: 2019, team: 'Flamengo', overall: 92, pos: 'ATA' },
-      { id: 'dudu_18', baseId: 'dudu', name: 'Dudu', year: 2018, team: 'Palmeiras', overall: 90, pos: 'PON' },
-      { id: 'vini_17', baseId: 'vini', name: 'Vini Jr', year: 2017, team: 'Flamengo', overall: 82, pos: 'PON' },
-      { id: 'endrick_23', baseId: 'endrick', name: 'Endrick', year: 2023, team: 'Palmeiras', overall: 85, pos: 'ATA' },
-      { id: 'estevao_24', baseId: 'estevao', name: 'Estevão', year: 2024, team: 'Palmeiras', overall: 81, pos: 'PON' },
-      { id: 'hulk_21', baseId: 'hulk', name: 'Hulk', year: 2021, team: 'Atlético-MG', overall: 91, pos: 'ATA' },
-      { id: 'paulinho_12', baseId: 'paulinho', name: 'Paulinho', year: 2012, team: 'Corinthians', overall: 91, pos: 'VOL' },
-      { id: 'renato_15', baseId: 'renato', name: 'Renato Augusto', year: 2015, team: 'Corinthians', overall: 91, pos: 'MEI' },
-      { id: 'ganso_10', baseId: 'ganso', name: 'PH Ganso', year: 2010, team: 'Santos', overall: 91, pos: 'MEI' },
-      { id: 'dale_10', baseId: 'dale', name: "D'Alessandro", year: 2010, team: 'Inter', overall: 91, pos: 'MEI' },
-      { id: 'fernandao_06', baseId: 'fernandao', name: 'Fernandão', year: 2006, team: 'Inter', overall: 90, pos: 'ATA' },
-      { id: 'luan_17', baseId: 'luan', name: 'Luan', year: 2017, team: 'Grêmio', overall: 91, pos: 'MEI' },
-      { id: 'fred_12', baseId: 'fred', name: 'Fred', year: 2012, team: 'Fluminense', overall: 91, pos: 'ATA' },
-      { id: 'tardelli_13', baseId: 'tardelli', name: 'Diego Tardelli', year: 2013, team: 'Atlético-MG', overall: 89, pos: 'ATA' },
-      { id: 'marcelo_23', baseId: 'marcelo', name: 'Marcelo', year: 2023, team: 'Fluminense', overall: 88, pos: 'LAT' },
-      { id: 'fagner_17', baseId: 'fagner', name: 'Fagner', year: 2017, team: 'Corinthians', overall: 88, pos: 'LAT' },
-      { id: 'felipe_melo_18', baseId: 'felipe_melo', name: 'Felipe Melo', year: 2018, team: 'Palmeiras', overall: 87, pos: 'VOL' },
-      { id: 'dede_13', baseId: 'dede', name: 'Dedé', year: 2013, team: 'Cruzeiro', overall: 90, pos: 'ZAG' },
-      { id: 'miranda_08', baseId: 'miranda', name: 'Miranda', year: 2008, team: 'São Paulo', overall: 91, pos: 'ZAG' },
-      { id: 'lucas_m_12', baseId: 'lucas_m', name: 'Lucas Moura', year: 2012, team: 'São Paulo', overall: 89, pos: 'PON' },
-      { id: 'robinho_02', baseId: 'robinho', name: 'Robinho', year: 2002, team: 'Santos', overall: 90, pos: 'ATA' },
-      { id: 'apodi_15', baseId: 'apodi', name: 'Apodi', year: 2015, team: 'Chapecoense', overall: 78, pos: 'LAT' },
-      { id: 'ribamar_19', baseId: 'ribamar', name: 'Ribamar', year: 2019, team: 'Vasco', overall: 72, pos: 'ATA' },
-      { id: 'weverton_20', baseId: 'weverton', name: 'Weverton', year: 2020, team: 'Palmeiras', overall: 89, pos: 'GOL' },
-      { id: 'fabio_13', baseId: 'fabio', name: 'Fábio', year: 2013, team: 'Cruzeiro', overall: 90, pos: 'GOL' },
-      { id: 'pedro_22', baseId: 'pedro', name: 'Pedro', year: 2022, team: 'Flamengo', overall: 89, pos: 'ATA' },
-      { id: 'cano_22', baseId: 'cano', name: 'Germán Cano', year: 2022, team: 'Fluminense', overall: 89, pos: 'ATA' },
-      // Lendas Secundárias / Bagres para dar volume
-      { id: 'obina_09', baseId: 'obina', name: 'Obina', year: 2009, team: 'Palmeiras', overall: 80, pos: 'ATA' },
-      { id: 'valdivia_08', baseId: 'valdivia', name: 'Valdívia', year: 2008, team: 'Palmeiras', overall: 89, pos: 'MEI' },
-      { id: 'kleber_08', baseId: 'kleber', name: 'Kleber', year: 2008, team: 'Palmeiras', overall: 86, pos: 'ATA' },
-      { id: 'guerrero_15', baseId: 'guerrero', name: 'Guerrero', year: 2015, team: 'Corinthians', overall: 88, pos: 'ATA' },
-      { id: 'calleri_16', baseId: 'calleri', name: 'Calleri', year: 2016, team: 'São Paulo', overall: 87, pos: 'ATA' },
-      { id: 'arana_17', baseId: 'arana', name: 'G. Arana', year: 2017, team: 'Corinthians', overall: 86, pos: 'LAT' },
-      { id: 'danilo_12', baseId: 'danilo', name: 'Danilo', year: 2012, team: 'Corinthians', overall: 88, pos: 'MEI' },
-      { id: 'marcelinho_99', baseId: 'marcelinho', name: 'Marcelinho', year: 1999, team: 'Corinthians', overall: 92, pos: 'MEI' },
-      { id: 'edilson_99', baseId: 'edilson', name: 'Edílson', year: 1999, team: 'Corinthians', overall: 90, pos: 'ATA' },
-      { id: 'evair_99', baseId: 'evair', name: 'Evair', year: 1999, team: 'Palmeiras', overall: 89, pos: 'ATA' },
-      { id: 'tche_16', baseId: 'tche', name: 'Tchê Tchê', year: 2016, team: 'Palmeiras', overall: 84, pos: 'VOL' },
-      { id: 'prass_15', baseId: 'prass', name: 'F. Prass', year: 2015, team: 'Palmeiras', overall: 88, pos: 'GOL' },
-      { id: 'victor_13', baseId: 'victor', name: 'Victor', year: 2013, team: 'Atlético-MG', overall: 89, pos: 'GOL' },
-      { id: 'grohe_17', baseId: 'grohe', name: 'M. Grohe', year: 2017, team: 'Grêmio', overall: 89, pos: 'GOL' },
-      { id: 'gil_15', baseId: 'gil', name: 'Gil', year: 2015, team: 'Corinthians', overall: 88, pos: 'ZAG' },
-      { id: 'balbuena_15', baseId: 'balbuena', name: 'Balbuena', year: 2015, team: 'Corinthians', overall: 87, pos: 'ZAG' },
-      { id: 'yago_pikachu_18', baseId: 'pikachu', name: 'Yago Pikachu', year: 2018, team: 'Vasco', overall: 84, pos: 'LAT' },
-      { id: 'nino_paraiba_19', baseId: 'nino', name: 'Nino Paraíba', year: 2019, team: 'Bahia', overall: 81, pos: 'LAT' },
-      { id: 'tcheco_06', baseId: 'tcheco', name: 'Tcheco', year: 2006, team: 'Grêmio', overall: 85, pos: 'MEI' },
-      { id: 'magrao_08', baseId: 'magrao', name: 'Magrão', year: 2008, team: 'Sport', overall: 86, pos: 'GOL' }
-    ];
+    const RAW_DB = `
+      pele|Pelé|1970|Santos|99|ATA
+      zico|Zico|1981|Flamengo|98|MEI
+      romario|Romário|2000|Vasco|97|ATA
+      ronaldo|Ronaldo|1996|Cruzeiro|97|ATA
+      neymar|Neymar Jr|2011|Santos|96|PON
+      rcarlos|Roberto Carlos|2010|Corinthians|93|LAT
+      cafu|Cafu|1993|São Paulo|94|LAT
+      ceni|Rogério Ceni|2005|São Paulo|94|GOL
+      dida|Dida|1999|Corinthians|94|GOL
+      taffarel|Taffarel|1998|Atlético-MG|93|GOL
+      marcos|São Marcos|1999|Palmeiras|94|GOL
+      cassio|Cássio|2012|Corinthians|92|GOL
+      gamarra|Gamarra|1998|Corinthians|94|ZAG
+      aldair|Aldair|1995|Roma|93|ZAG
+      lugano|Lugano|2005|São Paulo|92|ZAG
+      gomez|Gustavo Gómez|2020|Palmeiras|91|ZAG
+      tsilva|Thiago Silva|2008|Fluminense|92|ZAG
+      geromel|Geromel|2017|Grêmio|91|ZAG
+      kannemann|Kannemann|2017|Grêmio|89|ZAG
+      msilva|Mauro Silva|1994|Bragantino|93|VOL
+      dunga|Dunga|1999|Inter|91|VOL
+      mineiro|Mineiro|2005|São Paulo|90|VOL
+      vampeta|Vampeta|1999|Corinthians|90|VOL
+      rincon|Rincón|1999|Corinthians|91|VOL
+      kaka|Kaká|2002|São Paulo|92|MEI
+      alex|Alex|2003|Cruzeiro|95|MEI
+      r10|Ronaldinho|2011|Flamengo|93|MEI
+      djalminha|Djalminha|1996|Palmeiras|92|MEI
+      arrasca|Arrascaeta|2019|Flamengo|92|MEI
+      everton|Éverton Ribeiro|2019|Flamengo|90|MEI
+      conca|Conca|2010|Fluminense|92|MEI
+      petkovic|Petkovic|2009|Flamengo|91|MEI
+      edmundo|Edmundo|1997|Vasco|96|ATA
+      adriano|Adriano Imp.|2009|Flamengo|93|ATA
+      luis_fabiano|Luis Fabiano|2012|São Paulo|89|ATA
+      bh|Bruno Henrique|2019|Flamengo|92|PON
+      gabigol|Gabigol|2019|Flamengo|92|ATA
+      dudu|Dudu|2018|Palmeiras|90|PON
+      vini|Vini Jr|2017|Flamengo|82|PON
+      endrick|Endrick|2023|Palmeiras|85|ATA
+      estevao|Estevão|2024|Palmeiras|81|PON
+      hulk|Hulk|2021|Atlético-MG|91|ATA
+      paulinho|Paulinho|2012|Corinthians|91|VOL
+      renato|Renato Augusto|2015|Corinthians|91|MEI
+      ganso|PH Ganso|2010|Santos|91|MEI
+      dale|D'Alessandro|2010|Inter|91|MEI
+      fernandao|Fernandão|2006|Inter|90|ATA
+      luan|Luan|2017|Grêmio|91|MEI
+      fred|Fred|2012|Fluminense|91|ATA
+      tardelli|Diego Tardelli|2013|Atlético-MG|89|ATA
+      marcelo|Marcelo|2023|Fluminense|88|LAT
+      fagner|Fagner|2017|Corinthians|88|LAT
+      felipe_melo|Felipe Melo|2018|Palmeiras|87|VOL
+      dede|Dedé|2013|Cruzeiro|90|ZAG
+      miranda|Miranda|2008|São Paulo|91|ZAG
+      lucas_m|Lucas Moura|2012|São Paulo|89|PON
+      robinho|Robinho|2002|Santos|90|ATA
+      apodi|Apodi|2015|Chapecoense|78|LAT
+      ribamar|Ribamar|2019|Vasco|72|ATA
+      weverton|Weverton|2020|Palmeiras|89|GOL
+      fabio|Fábio|2013|Cruzeiro|90|GOL
+      pedro|Pedro|2022|Flamengo|89|ATA
+      cano|Germán Cano|2022|Fluminense|89|ATA
+    `.trim().split('\n').map(line => {
+      const [baseId, name, year, team, overall, pos] = line.trim().split('|');
+      return { id: baseId + '_' + year, baseId, name, year: parseInt(year), team, overall: parseInt(overall), pos };
+    });
 
     const FORMATIONS = {
       '4-3-3': ['GOL', 'LAT', 'ZAG', 'ZAG', 'LAT', 'VOL', 'MEI', 'MEI', 'PON', 'ATA', 'PON'],
@@ -223,7 +215,11 @@
       if (player.overall >= 95) { rarity = 'from-cyan-400 to-blue-600 border-cyan-300 text-black'; glow = 'shadow-[0_0_35px_rgba(34,211,238,0.8)]'; } 
 
       return (
-        <div onClick={() => onClick && onClick(player)} className={`card-3d w-40 h-56 rounded-xl bg-gradient-to-br ${rarity} ${glow} p-3 flex flex-col justify-between cursor-pointer relative overflow-hidden animate-slide-up group`} onMouseEnter={SFX.pick}>
+        <div 
+          onClick={() => onClick && onClick(player)}
+          className={`card-3d w-40 h-56 rounded-xl bg-gradient-to-br ${rarity} ${glow} p-3 flex flex-col justify-between relative overflow-hidden animate-slide-up group`}
+          onMouseEnter={SFX.pick}
+        >
           <div className="absolute top-0 right-0 w-[150%] h-[150%] card-flare -translate-y-full group-hover:animate-flare"></div>
           <div className="flex justify-between items-start z-10">
             <span className="font-black text-4xl leading-none drop-shadow-md">{hidden ? '??' : player.overall}</span>
@@ -243,97 +239,118 @@
       const [events, setEvents] = useState([]);
       const [s1, setS1] = useState(0);
       const [s2, setS2] = useState(0);
+      const [momentum, setMomentum] = useState(50);
+      const [shake, setShake] = useState(false);
 
       useEffect(() => {
         if (!match || !match.played || !mountRef.current) return;
         if(Date.now() - match.startTime < 1000) SFX.whistle();
 
         const width = mountRef.current.clientWidth;
-        const height = mountRef.current.clientHeight;
-        const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x020803, 0.02);
+        const height = mountRef.current.clientHeight || 300;
 
-        const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
-        camera.position.set(0, 15, 20);
+        // 1. SETUP DA CENA (PBR)
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x020804);
+        scene.fog = new THREE.Fog(0x020804, 20, 60);
+
+        // Câmera Estilo Transmissão TV (Lateral)
+        const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+        camera.position.set(0, 20, 35);
         camera.lookAt(0, 0, 0);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
         renderer.setSize(width, height);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         mountRef.current.innerHTML = '';
         mountRef.current.appendChild(renderer.domElement);
 
-        const fieldGroup = new THREE.Group();
-        const lineMat = new THREE.LineBasicMaterial({ color: 0x22c55e, transparent: true, opacity: 0.3 });
-        
-        const fieldGeo = new THREE.BufferGeometry().setFromPoints([
-          new THREE.Vector3(-15, 0, -25), new THREE.Vector3(15, 0, -25),
-          new THREE.Vector3(15, 0, 25), new THREE.Vector3(-15, 0, 25),
-          new THREE.Vector3(-15, 0, -25)
-        ]);
-        const midLine = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-15, 0, 0), new THREE.Vector3(15, 0, 0)]);
-        
-        fieldGroup.add(new THREE.Line(fieldGeo, lineMat));
-        fieldGroup.add(new THREE.Line(midLine, lineMat));
+        // 2. ILUMINAÇÃO DE ESTÁDIO
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
 
-        const createGoal = (zPos, color) => {
-          const g = new THREE.BoxGeometry(8, 3, 2);
-          const m = new THREE.MeshBasicMaterial({ color: color, wireframe: true, transparent: true, opacity: 0.5 });
-          const mesh = new THREE.Mesh(g, m);
-          mesh.position.set(0, 1.5, zPos);
-          return mesh;
+        const floodLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        floodLight.position.set(10, 30, 15);
+        floodLight.castShadow = true;
+        floodLight.shadow.mapSize.width = 1024;
+        floodLight.shadow.mapSize.height = 1024;
+        floodLight.shadow.camera.left = -30;
+        floodLight.shadow.camera.right = 30;
+        floodLight.shadow.camera.top = 20;
+        floodLight.shadow.camera.bottom = -20;
+        scene.add(floodLight);
+
+        // 3. GERAÇÃO DO GRAMADO COM LINHAS BRANCAS (Procedural Canvas)
+        const fieldCanvas = document.createElement('canvas');
+        fieldCanvas.width = 1024;
+        fieldCanvas.height = 512;
+        const ctx = fieldCanvas.getContext('2d');
+        
+        // Grama (Listras)
+        for(let i=0; i<20; i++) {
+            ctx.fillStyle = i % 2 === 0 ? '#115e29' : '#156c31';
+            ctx.fillRect(i * (1024/20), 0, 1024/20, 512);
+        }
+        
+        // Linhas do Campo
+        ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        // Bordas
+        ctx.rect(20, 20, 984, 472);
+        // Meio Campo
+        ctx.moveTo(512, 20); ctx.lineTo(512, 492);
+        // Círculo Central
+        ctx.arc(512, 256, 70, 0, Math.PI * 2);
+        // Áreas (Esquerda e Direita)
+        ctx.rect(20, 136, 120, 240);
+        ctx.rect(884, 136, 120, 240);
+        ctx.stroke();
+
+        const fieldTexture = new THREE.CanvasTexture(fieldCanvas);
+        fieldTexture.wrapS = THREE.RepeatWrapping;
+        fieldTexture.wrapT = THREE.RepeatWrapping;
+
+        const fieldGeo = new THREE.PlaneGeometry(60, 30);
+        const fieldMat = new THREE.MeshStandardMaterial({ map: fieldTexture, roughness: 0.8, metalness: 0.1 });
+        const field = new THREE.Mesh(fieldGeo, fieldMat);
+        field.rotation.x = -Math.PI / 2;
+        field.receiveShadow = true;
+        scene.add(field);
+
+        // 4. TRAVES (MODELAGEM 3D)
+        const createGoal = (xPos) => {
+            const goalGroup = new THREE.Group();
+            const postGeo = new THREE.CylinderGeometry(0.15, 0.15, 3);
+            const crossGeo = new THREE.CylinderGeometry(0.15, 0.15, 8);
+            const postMat = new THREE.MeshStandardMaterial({color: 0xffffff, roughness: 0.2});
+            
+            const p1 = new THREE.Mesh(postGeo, postMat); p1.position.set(0, 1.5, -4); p1.castShadow = true;
+            const p2 = new THREE.Mesh(postGeo, postMat); p2.position.set(0, 1.5, 4); p2.castShadow = true;
+            const cross = new THREE.Mesh(crossGeo, postMat); cross.rotation.x = Math.PI/2; cross.position.set(0, 3, 0); cross.castShadow = true;
+            
+            goalGroup.add(p1); goalGroup.add(p2); goalGroup.add(cross);
+            goalGroup.position.set(xPos, 0, 0);
+            return goalGroup;
         };
-        const goal1 = createGoal(-25, 0xeab308); 
-        const goal2 = createGoal(25, 0x3b82f6);  
-        fieldGroup.add(goal1);
-        fieldGroup.add(goal2);
-        scene.add(fieldGroup);
+        scene.add(createGoal(-29.5)); // Trave Esquerda
+        scene.add(createGoal(29.5));  // Trave Direita
 
-        const ballGeo = new THREE.SphereGeometry(0.5, 16, 16);
-        const ballMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        // 5. A BOLA (PBR Sphere)
+        const ballGeo = new THREE.SphereGeometry(0.4, 32, 32);
+        const ballMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0.5 });
         const ball = new THREE.Mesh(ballGeo, ballMat);
-        
-        const ballLight = new THREE.PointLight(0xffffff, 2, 20);
-        ball.add(ballLight);
-        ball.position.set(0, 0.5, 0);
+        ball.castShadow = true;
+        ball.position.set(0, 0.4, 0);
         scene.add(ball);
 
-        // Object Pooling for VFX (Zero Latency Explosions)
-        const particleCount = 40;
-        const particles = new THREE.InstancedMesh(
-          new THREE.BoxGeometry(0.3, 0.3, 0.3),
-          new THREE.MeshBasicMaterial({ color: 0xffcc00 }),
-          particleCount
-        );
-        const dummy = new THREE.Object3D();
-        const pVelocities = [];
-        for(let i=0; i<particleCount; i++) {
-           particles.setMatrixAt(i, new THREE.Matrix4().makeScale(0,0,0)); 
-           pVelocities.push(new THREE.Vector3(0,0,0));
-        }
-        scene.add(particles);
-
-        let isExploding = false;
-        const triggerGoalVFX = (zPos) => {
-          isExploding = true;
-          for(let i=0; i<particleCount; i++) {
-            dummy.position.set((Math.random()-0.5)*4, 1.5 + Math.random()*2, zPos + (Math.random()-0.5)*2);
-            dummy.updateMatrix();
-            particles.setMatrixAt(i, dummy.matrix);
-            pVelocities[i].set((Math.random()-0.5)*0.5, Math.random()*0.5, (Math.random()-0.5)*0.5);
-          }
-          particles.instanceMatrix.needsUpdate = true;
-          setTimeout(() => { 
-            isExploding = false; 
-            for(let i=0; i<particleCount; i++) particles.setMatrixAt(i, new THREE.Matrix4().makeScale(0,0,0)); 
-            particles.instanceMatrix.needsUpdate = true; 
-          }, 1500);
-        };
-
-        const msPerMin = 333; 
+        // 6. MOTOR DE ANIMAÇÃO E FÍSICA
+        const msPerMin = 333; // 30s match = 90 mins
         let animationId;
-        let targetZ = 0;
         let targetX = 0;
+        let targetZ = 0;
         let baseShake = 0;
 
         const animate = () => {
@@ -352,49 +369,50 @@
                 const g1 = currentEvents.filter(e => e.type === 'goal' && e.teamId === match.p1.uid).length;
                 const g2 = currentEvents.filter(e => e.type === 'goal' && e.teamId === match.p2.uid).length;
                 
-                if (g1 > s1) { SFX.goal(); triggerGoalVFX(25); baseShake = 1.0; } 
-                if (g2 > s2) { SFX.goal(); triggerGoalVFX(-25); baseShake = 1.0; } 
-                
+                if (g1 > s1 || g2 > s2) { 
+                    SFX.goal(); 
+                    baseShake = 1.5; 
+                    setShake(true); 
+                    setTimeout(() => setShake(false), 500);
+                } 
                 setS1(g1); setS2(g2);
             }
+
+            // Ler Momentum
+            const lastMom = match.momentumData?.find(m => m.min <= displayMin);
+            let currentMomVal = lastMom ? lastMom.val : 50;
+            if (displayMin < 90) setMomentum(currentMomVal);
 
             const activeEvent = match.events.find(e => Math.abs(e.minute - currentVirtualMin) < 1.5);
             
             if (activeEvent) {
-               if (activeEvent.teamId === match.p1.uid) { targetZ = 20; targetX = (Math.random()-0.5)*10; } 
-               else { targetZ = -20; targetX = (Math.random()-0.5)*10; } 
+               // Direciona a bola para a área do ataque
+               if (activeEvent.teamId === match.p1.uid) { targetX = 25; targetZ = (Math.random()-0.5)*10; } 
+               else { targetX = -25; targetZ = (Math.random()-0.5)*10; } 
             } else {
-               const lastMom = match.momentumData?.find(m => m.min <= displayMin) || {val: 50};
-               targetZ = ((lastMom.val - 50) / 50) * 15; 
-               targetX = Math.sin(currentVirtualMin) * 5; 
+               // Troca de passes baseada no Momentum (Tug of war no eixo X)
+               targetX = ((currentMomVal - 50) / 50) * 15; 
+               targetZ = Math.sin(currentVirtualMin * 2) * 8; 
             }
 
-            if (currentVirtualMin >= 90) { targetZ = 0; targetX = 0; }
+            if (currentVirtualMin >= 90) { targetX = 0; targetZ = 0; }
 
-            // LERP Physics
-            ball.position.z += (targetZ - ball.position.z) * 0.05;
-            ball.position.x += (targetX - ball.position.x) * 0.05;
-            ball.position.y = 0.5 + Math.abs(Math.sin(currentVirtualMin * 2)) * 1.5;
+            // Física de LERP + Pulo da bola
+            ball.position.x += (targetX - ball.position.x) * 0.08;
+            ball.position.z += (targetZ - ball.position.z) * 0.08;
+            // Efeito de bola quicando com base na velocidade de deslocamento
+            const speed = Math.abs(targetX - ball.position.x) + Math.abs(targetZ - ball.position.z);
+            ball.position.y = 0.4 + Math.abs(Math.sin(currentVirtualMin * 5)) * (speed * 0.2);
+            ball.rotation.z -= speed * 0.1;
 
-            if(isExploding) {
-              for(let i=0; i<particleCount; i++) {
-                particles.getMatrixAt(i, dummy.matrix);
-                dummy.position.setFromMatrixPosition(dummy.matrix);
-                dummy.position.add(pVelocities[i]);
-                pVelocities[i].y -= 0.02; // Gravity
-                dummy.updateMatrix();
-                particles.setMatrixAt(i, dummy.matrix);
-              }
-              particles.instanceMatrix.needsUpdate = true;
-            }
-
+            // Camera Shake (Impacto Visual)
             if (baseShake > 0.01) {
               camera.position.x = (Math.random() - 0.5) * baseShake;
-              camera.position.y = 15 + (Math.random() - 0.5) * baseShake;
+              camera.position.y = 20 + (Math.random() - 0.5) * baseShake;
               baseShake *= 0.9; 
             } else {
               camera.position.x = 0;
-              camera.position.y = 15;
+              camera.position.y = 20;
             }
           }
 
@@ -414,64 +432,65 @@
       const isFinished = localMin === 90;
 
       return (
-        <div className="glass rounded-2xl flex flex-col h-[600px] overflow-hidden border-green-800 shadow-2xl relative">
-          <div className="p-4 border-b border-white/10 text-center relative z-20 bg-gradient-to-b from-black/90 to-transparent">
-            <div className="font-black text-xs tracking-widest mb-2 flex justify-center items-center gap-2 text-yellow-400">
+        <div className={`glass rounded-2xl flex flex-col h-[650px] overflow-hidden transition-all duration-300 ${shake ? 'animate-shake border-yellow-500 shadow-[0_0_50px_rgba(250,204,21,0.5)]' : 'border-green-800'}`}>
+          <div className={`p-4 border-b border-white/10 text-center relative z-20 transition-colors duration-500 ${shake ? 'bg-yellow-600 text-black' : 'bg-gradient-to-b from-black/90 to-transparent'}`}>
+            <div className={`font-black text-xs tracking-widest mb-2 flex justify-center items-center gap-2 ${shake ? 'text-black' : 'text-yellow-400'}`}>
               {isFinished ? <><i className="fa-solid fa-flag-checkered"></i> FIM DE JOGO</> : <><i className="fa-solid fa-satellite-dish animate-pulse"></i> {localMin}' MINUTOS</>}
             </div>
             <div className="flex justify-between items-center px-2 md:px-8">
-              <div className="flex-1 text-right font-black text-xl md:text-3xl truncate drop-shadow-lg text-yellow-500">{match.p1.name}</div>
+              <div className="flex-1 text-right font-black text-xl md:text-3xl truncate drop-shadow-lg">{match.p1.name}</div>
               <div className="mx-4 px-6 py-2 bg-black/80 rounded-xl border border-white/20 flex gap-4 text-4xl font-black text-white shadow-inner">
                 <span>{s1}</span><span className="text-gray-600 text-2xl self-center">x</span><span>{s2}</span>
               </div>
-              <div className="flex-1 text-left font-black text-xl md:text-3xl truncate drop-shadow-lg text-blue-400">{match.p2.name}</div>
+              <div className="flex-1 text-left font-black text-xl md:text-3xl truncate drop-shadow-lg">{match.p2.name}</div>
+            </div>
+
+            {/* Barra de Momentum (Transmissão de TV) */}
+            <div className="absolute bottom-0 left-0 w-full h-1.5 bg-gray-900 overflow-hidden flex z-30">
+              <div className="h-full bg-blue-500 momentum-bar relative" style={{width: `${100 - momentum}%`}}></div>
+              <div className="h-full bg-red-500 momentum-bar relative" style={{width: `${momentum}%`}}></div>
             </div>
           </div>
 
-          <div className="absolute inset-0 z-0">
-             <div ref={mountRef} className="w-full h-full"></div>
-             <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black/90 to-transparent pointer-events-none"></div>
-          </div>
+          <div className="relative flex-1 bg-black/50">
+             {/* VISOR 3D DO ESTÁDIO */}
+             <div ref={mountRef} className="absolute inset-0 w-full h-full z-0"></div>
+             
+             {/* FEED DE COMENTÁRIOS COM GRADIENTE SOBREPOSTO */}
+             <div className="absolute bottom-0 left-0 w-full h-2/3 bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none z-10 flex flex-col justify-end p-4">
+               <div className="space-y-2 overflow-y-auto max-h-48 scrollbar-hide flex flex-col-reverse pointer-events-auto">
+                 {events.length === 0 && <div className="text-center text-green-500/50 mb-4 font-bold text-lg animate-pulse">As equipes estudam o adversário...</div>}
+                 {events.slice(0,4).map((ev, i) => {
+                   let bg = 'bg-black/60 border-green-900/50 text-gray-300 backdrop-blur-sm';
+                   let icon = 'fa-shoe-prints text-green-600';
+                   if(ev.type === 'goal') { bg = 'bg-yellow-500/90 text-black border-yellow-400 font-black text-lg shadow-[0_0_15px_rgba(250,204,21,0.6)] backdrop-blur-md'; icon = 'fa-futbol animate-bounce'; }
+                   else if(ev.type === 'foul') { bg = 'bg-red-900/80 border-red-700 text-red-100 font-bold backdrop-blur-md'; icon = 'fa-square text-red-500'; }
+                   else if(ev.type === 'save') { bg = 'bg-blue-900/80 border-blue-500 text-blue-100 font-bold backdrop-blur-md'; icon = 'fa-hands text-blue-400'; }
+                   else if(ev.type === 'attack') { bg = 'bg-green-900/80 border-green-500 text-green-50 font-bold backdrop-blur-md'; icon = 'fa-fire text-orange-500'; }
 
-          <div className="relative z-10 flex-1 overflow-y-auto p-4 space-y-2 mt-auto h-48 scrollbar-hide flex flex-col-reverse">
-            {events.slice(0,4).map((ev, i) => {
-              let bg = 'bg-black/60 border-green-900/50 text-gray-300 backdrop-blur-sm';
-              let icon = 'fa-shoe-prints text-green-600';
-              if(ev.type === 'goal') { bg = 'bg-yellow-500/90 text-black border-yellow-400 font-black text-lg shadow-[0_0_15px_rgba(250,204,21,0.6)] backdrop-blur-md'; icon = 'fa-futbol animate-bounce'; }
-              else if(ev.type === 'save') { bg = 'bg-blue-900/80 border-blue-500 text-blue-100 font-bold backdrop-blur-md'; icon = 'fa-hands text-blue-400'; }
-              else if(ev.type === 'foul') { bg = 'bg-red-900/80 border-red-700 text-red-100 font-bold backdrop-blur-md'; icon = 'fa-square text-red-500'; }
-              else if(ev.type === 'attack') { bg = 'bg-green-900/80 border-green-500 text-green-50 font-bold backdrop-blur-md'; icon = 'fa-fire text-orange-500'; }
-
-              return (
-                <div key={i} className={`p-3 rounded-lg border flex gap-3 items-center animate-slide-up ${bg}`}>
-                  {ev.type !== 'info' && <span className="font-black opacity-70 min-w-[30px] text-right text-sm">{ev.minute}'</span>}
-                  <i className={`fa-solid ${icon}`}></i>
-                  <span className="leading-tight flex-1 text-sm md:text-base">{ev.text}</span>
-                </div>
-              )
-            })}
+                   return (
+                     <div key={i} className={`p-3 rounded-lg border flex gap-3 items-center animate-slide-up ${bg}`}>
+                       {ev.type !== 'info' && <span className="font-black opacity-70 min-w-[30px] text-right text-sm">{ev.minute}'</span>}
+                       <i className={`fa-solid ${icon}`}></i>
+                       <span className="leading-tight flex-1 text-sm md:text-base">{ev.text}</span>
+                     </div>
+                   )
+                 })}
+               </div>
+             </div>
           </div>
         </div>
       );
     };
 
-    class ErrorBoundary extends React.Component {
-      constructor(props) { super(props); this.state = { hasError: false, error: null }; }
-      static getDerivedStateFromError(error) { return { hasError: true, error }; }
-      render() {
-        if (this.state.hasError) return <div className="min-h-screen bg-red-900 text-white flex items-center justify-center p-10"><div className="glass p-10 rounded-2xl max-w-2xl"><h1 className="text-4xl font-black mb-4"><i className="fa-solid fa-triangle-exclamation"></i> ENGINE CRASH</h1><p className="font-mono text-sm bg-black/50 p-4 rounded">{this.state.error.toString()}</p><button onClick={() => window.location.reload()} className="mt-6 bg-white text-red-900 font-bold py-2 px-6 rounded hover:bg-gray-200">REBOOT ENGINE</button></div></div>;
-        return this.props.children;
-      }
-    }
-
-    function MainApp() {
+    function App() {
       const [user, setUser] = useState(null);
       const [isAuthLoading, setIsAuthLoading] = useState(true);
       const [playerName, setPlayerName] = useState('');
-      const [appState, setAppState] = useState('INIT'); 
+      const [appState, setAppState] = useState('INIT');
       const [roomData, setRoomData] = useState(null);
       const [roomId, setRoomId] = useState('');
-      const [gameMode, setGameMode] = useState('knockout'); 
+      const [gameMode, setGameMode] = useState('knockout');
       const [error, setError] = useState('');
       
       const [myFormation, setMyFormation] = useState('4-3-3');
@@ -487,8 +506,7 @@
             await auth.signInAnonymously();
           } catch(e) {
             console.error("Auth Fail:", e);
-            setError("Erro crítico de Firebase. Verifique o Login Anônimo nas configs.");
-            setIsAuthLoading(false);
+            setError("Erro crítico ao conectar no servidor. Ative o Login Anônimo no Firebase.");
           }
         };
         init();
@@ -503,7 +521,6 @@
       useEffect(() => {
         if(!user || !roomId || appState === 'INIT' || appState === 'MENU') return;
         const roomRef = db.ref(`games/${APP_ID}/${roomId}`);
-        
         const listener = roomRef.on('value', snap => {
           if(snap.exists()) {
             const data = snap.val();
@@ -515,8 +532,7 @@
             if(data.status === 'tournament' && appState !== 'TOURNAMENT') setAppState('TOURNAMENT');
           } else {
             setAppState('MENU');
-            setRoomData(null);
-            setError('A sala não existe ou foi encerrada.');
+            setError('A sala foi encerrada pelo Host.');
           }
         });
         return () => roomRef.off('value', listener);
@@ -531,41 +547,40 @@
       const handleCreateRoom = async () => {
         SFX.click();
         if(!playerName || !roomId) return setError("Preencha Nome e Sala.");
-        try {
-          const roomRef = db.ref(`games/${APP_ID}/${roomId}`);
-          const snap = await roomRef.get();
-          if(snap.exists()) return setError("Sala já existe. Escolha outro código.");
+        const roomRef = db.ref(`games/${APP_ID}/${roomId}`);
+        const snap = await roomRef.get();
+        if(snap.exists()) return setError("Sala já existe. Escolha outro código.");
 
-          await roomRef.set({
-            hostUid: user.uid, status: 'lobby', stage: 0, mode: gameMode,
-            players: { [user.uid]: { name: playerName, overall: 0, isReady: false, isBot: false, tactic: 'Equilibrado' } }
-          });
-          setAppState('LOBBY');
-        } catch(e) { setError("Falha na Rede. Verifique as regras do Firebase Database."); }
+        await roomRef.set({
+          hostUid: user.uid, status: 'lobby', stage: 0, mode: gameMode,
+          players: { [user.uid]: { name: playerName, team: [], overall: 0, isReady: false, isBot: false, tactic: 'Equilibrado' } }
+        });
+        setAppState('LOBBY');
       };
 
       const handleJoinRoom = async () => {
         SFX.click();
         if(!playerName || !roomId) return setError("Preencha Nome e Sala.");
-        try {
-          const roomRef = db.ref(`games/${APP_ID}/${roomId}`);
-          const snap = await roomRef.get();
-          if(!snap.exists()) return setError("Sala não encontrada.");
-          const data = snap.val();
-          if(data.status !== 'lobby') return setError("A partida já começou.");
-          
-          await roomRef.update({ [`players/${user.uid}`]: { name: playerName, overall: 0, isReady: false, isBot: false, tactic: 'Equilibrado' } });
-          setAppState('LOBBY');
-        } catch(e) { setError("Falha ao entrar na sala."); }
+        const roomRef = db.ref(`games/${APP_ID}/${roomId}`);
+        const snap = await roomRef.get();
+        if(!snap.exists()) return setError("Sala não encontrada.");
+        const data = snap.val();
+        if(data.status !== 'lobby') return setError("A partida já começou.");
+        
+        await roomRef.update({ [`players/${user.uid}`]: { name: playerName, team: [], overall: 0, isReady: false, isBot: false, tactic: 'Equilibrado' } });
+        setAppState('LOBBY');
       };
 
       const pullPacks = (currentTeamLength) => {
         if (currentTeamLength >= 11) return;
+        
         const requiredPos = FORMATIONS[myFormation][currentTeamLength];
         
-        let pool = PLAYER_DATABASE.filter(p => p.pos === requiredPos && !seenIds.current.has(p.baseId));
+        // Filtro Posicional com Proteção de Array
+        let pool = RAW_DB.filter(p => p.pos === requiredPos && !seenIds.current.has(p.baseId));
         let options = pool.sort(() => 0.5 - Math.random()).slice(0, 3);
         
+        // Fallback procedural de segurança caso o DB esvazie para a posição
         let botIndex = 0;
         while (options.length < 3) {
            const mockId = `gen_${requiredPos}_${Date.now()}_${botIndex}`;
@@ -575,6 +590,7 @@
            });
            botIndex++;
         }
+
         options.forEach(p => seenIds.current.add(p.baseId));
         setDraftOptions(options);
       };
@@ -589,22 +605,28 @@
         let chemBoost = 0;
         const teamCounts = {};
         team.forEach(p => { teamCounts[p.team] = (teamCounts[p.team] || 0) + 1; });
-        Object.values(teamCounts).forEach(count => { if(count >= 2) chemBoost += (count - 1) * 2; });
+        Object.values(teamCounts).forEach(count => {
+           if(count >= 2) chemBoost += (count - 1) * 2; 
+        });
         return chemBoost;
       };
 
       const pickPlayer = async (player) => {
-        if (myTeam.length >= 11) return;
+        const currentLength = myTeam.length;
+        if (currentLength >= 11) return; // Trava de segurança
         
         if (player.overall >= 93) {
           SFX.walkout();
           setWalkoutPlayer(player);
           setTimeout(() => setWalkoutPlayer(null), 3000);
-        } else SFX.pick();
+        } else {
+          SFX.pick();
+        }
         
         const newTeam = [...myTeam, player];
-        setMyTeam(newTeam); 
+        setMyTeam(newTeam);
         
+        // Se ainda não formou os 11, puxa próximo pacote. Se formou, fecha.
         if (newTeam.length < 11) {
           pullPacks(newTeam.length);
         } else {
@@ -715,7 +737,7 @@
                const roll = Math.random();
                if(roll < 0.20) { 
                  s1 += isP1 ? 1 : 0; s2 += isP1 ? 0 : 1;
-                 const goalTexts = [`GOLAÇO! ${att.name} fuzila pro fundo das redes!`, `É GOL! Troca de passes envolvente do ${att.name}!`, `QUE PINTURA! ${att.name} encobre o goleiro!`];
+                 const goalTexts = [`GOLAÇO! ${att.name} fuzila pro fundo das redes!`, `É GOL! Troca de passes envolvente do ${att.name}!`, `QUE PINTURA! ${att.name} encobre o goleiro!`, `Pênalti cobrado com frieza. Gol do ${att.name}!`];
                  events.push({ minute: min, type: 'goal', teamId: att.uid, text: goalTexts[Math.floor(Math.random()*goalTexts.length)] });
                  currentMom = 50;
                } else if(roll < 0.45) {
@@ -747,6 +769,7 @@
         
         setTimeout(async () => {
            if (roomData?.mode === 'league') {
+              // Engine Liga (Round Robin Update)
               const std = roomData.bracket.standings || {};
               simulatedMatches.forEach(m => {
                  if(m.s1 > m.s2) { std[m.p1.uid].pts+=3; std[m.p1.uid].w++; std[m.p2.uid].l++; }
@@ -758,6 +781,7 @@
               });
               await db.ref(`games/${APP_ID}/${roomId}`).update({ ['bracket/standings']: std, stage: 4 }); 
            } else {
+             // Engine Mata-Mata
              const nextStage = roomData?.stage === 1 ? 'semis' : roomData?.stage === 2 ? 'final' : 'campeao';
              if (nextStage !== 'campeao') {
                let nextMatches = [];
@@ -781,10 +805,6 @@
       );
       
       if (!roomData && appState !== 'MENU') return <div className="min-h-screen flex items-center justify-center pitch-bg text-yellow-500 font-black text-2xl"><div className="glass p-8 rounded-2xl flex items-center animate-pulse"><i className="fa-solid fa-network-wired mr-4 text-4xl"></i> Sincronizando Rede...</div></div>;
-
-      const isHost = roomData?.hostUid === user?.uid;
-      const myPlayerStatus = roomData?.players?.[user?.uid];
-      const allReady = roomData?.players && Object.values(roomData.players).every(p => p.isReady);
 
       if (appState === 'LOBBY') return (
         <div className="min-h-screen p-4 md:p-10 bg-green-950 flex flex-col items-center justify-center pitch-bg"><div className="glass p-8 md:p-12 rounded-[2rem] w-full max-w-5xl shadow-2xl animate-slide-up border border-green-800"><div className="flex flex-col md:flex-row justify-between items-center border-b-2 border-green-800/50 pb-6 mb-10"><div><h2 className="text-4xl md:text-5xl font-black">LOBBY <span className="text-yellow-400 font-mono tracking-tighter">{roomId}</span></h2><p className="text-green-400 mt-2 font-bold uppercase tracking-widest">MODO: {roomData?.mode}</p></div><div className="bg-black/40 px-6 py-3 rounded-xl border border-green-900 mt-4 md:mt-0 font-bold">{Object.keys(roomData?.players||{}).length} / {roomData?.mode === '1v1' ? 2 : 8} Treinadores</div></div><div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-12">{Object.entries(roomData?.players||{}).map(([uid, p]) => (<div key={uid} className="bg-gradient-to-b from-green-900/50 to-black/50 p-6 rounded-2xl border border-green-700 flex flex-col items-center gap-4 shadow-lg"><div className={`w-16 h-16 rounded-full flex items-center justify-center shadow-inner text-2xl ${uid === roomData?.hostUid ? 'bg-yellow-500/20 border-2 border-yellow-500 text-yellow-400' : 'bg-green-800 border-2 border-green-600 text-green-300'}`}>{uid === roomData?.hostUid ? <i className="fa-solid fa-crown"></i> : <i className="fa-solid fa-user"></i>}</div><span className="font-black text-lg truncate w-full text-center tracking-tight">{p.name}</span></div>))}</div><div className="text-center bg-black/30 p-8 rounded-2xl border border-white/5">{isHost ? (<button onClick={()=>db.ref(`games/${APP_ID}/${roomId}`).update({status:'draft_setup'})} className="bg-yellow-500 text-black font-black px-12 py-5 rounded-xl text-2xl shadow-[0_0_30px_rgba(250,204,21,0.5)] hover:scale-105 transition w-full md:w-auto">PRANCHETA TÁTICA</button>) : (<div className="text-yellow-400 font-bold text-xl animate-pulse">Aguardando Host...</div>)}</div></div></div>
@@ -838,6 +858,7 @@
                   <div className="lg:col-span-3">{myMatch ? <MatchViewer3D match={myMatch} /> : activeMatches[0] ? <MatchViewer3D match={activeMatches[0]} /> : null}</div>
                   
                   <div className="flex flex-col gap-4">
+                    {/* LEAGUE STANDINGS */}
                     {isLeague && roomData.bracket.standings && (
                       <div className="glass p-4 rounded-xl border border-blue-800/50 mb-4">
                         <h3 className="text-blue-400 font-black text-center mb-2 uppercase tracking-widest text-sm">Classificação</h3>
@@ -870,7 +891,7 @@
     }
 
     const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<ErrorBoundary><MainApp /></ErrorBoundary>);
+    root.render(<App />);
   </script>
 </body>
 </html>
