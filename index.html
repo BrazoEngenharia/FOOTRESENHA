@@ -520,10 +520,10 @@
 
       const generateTournamentBracket = async () => {
         SFX.click();
-        const players = Object.entries(roomData.players).map(([uid, p]) => ({uid, ...p}));
+        const players = Object.entries(roomData?.players || {}).map(([uid, p]) => ({uid, ...p}));
         
         let targetSize = 8;
-        if (roomData.mode === '1v1') targetSize = 2;
+        if (roomData?.mode === '1v1') targetSize = 2;
         else if (players.length <= 4) targetSize = 4;
         
         let bracketPlayers = [...players];
@@ -549,8 +549,10 @@
       const simulateMatches = async () => {
         SFX.click();
         const startTime = Date.now() + 1500; 
-        const stageKey = roomData.stage === 1 ? 'quarters' : roomData.stage === 2 ? 'semis' : 'final';
-        const matchesToSim = roomData.bracket[stageKey];
+        const stageKey = roomData?.stage === 1 ? 'quarters' : roomData?.stage === 2 ? 'semis' : 'final';
+        const matchesToSim = roomData?.bracket?.[stageKey] || [];
+
+        if (matchesToSim.length === 0) return;
 
         const simulatedMatches = matchesToSim.map(match => {
            let events = [];
@@ -623,13 +625,13 @@
         await db.ref(`games/${APP_ID}/${roomId}/bracket/${stageKey}`).set(simulatedMatches);
         
         setTimeout(async () => {
-           const nextStage = roomData.stage === 1 ? 'semis' : roomData.stage === 2 ? 'final' : 'campeao';
+           const nextStage = roomData?.stage === 1 ? 'semis' : roomData?.stage === 2 ? 'final' : 'campeao';
            if (nextStage !== 'campeao') {
              let nextMatches = [];
              for(let i=0; i<simulatedMatches.length; i+=2) {
                nextMatches.push({ p1: simulatedMatches[i].winner, p2: simulatedMatches[i+1].winner, played: false, events: [] });
              }
-             await db.ref(`games/${APP_ID}/${roomId}`).update({ [`bracket/${nextStage}`]: nextMatches, stage: roomData.stage + 1 });
+             await db.ref(`games/${APP_ID}/${roomId}`).update({ [`bracket/${nextStage}`]: nextMatches, stage: (roomData?.stage || 1) + 1 });
            } else {
              await db.ref(`games/${APP_ID}/${roomId}`).update({ stage: 4 }); 
            }
@@ -650,10 +652,6 @@
           </div>
         );
       }
-
-      const isHost = roomData?.hostUid === user?.uid;
-      const myPlayerStatus = roomData?.players?.[user?.uid];
-      const allReady = roomData?.players && Object.values(roomData.players).every(p => p.isReady);
 
       if (appState === 'MENU') {
         return (
@@ -687,6 +685,21 @@
         );
       }
 
+      // 🛑 SYNC GATE: Proteção total contra falhas de renderização antes dos dados chegarem
+      if (!roomData) {
+        return (
+          <div className="min-h-screen flex items-center justify-center bg-pitch bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] text-yellow-500 font-black text-2xl">
+            <div className="glass p-8 rounded-2xl flex items-center animate-pulse border border-yellow-500/50 shadow-[0_0_30px_rgba(250,204,21,0.2)]">
+              <i className="fa-solid fa-network-wired mr-4 text-4xl"></i> Sincronizando Sala...
+            </div>
+          </div>
+        );
+      }
+
+      const isHost = roomData?.hostUid === user?.uid;
+      const myPlayerStatus = roomData?.players?.[user?.uid];
+      const allReady = roomData?.players && Object.values(roomData.players).every(p => p.isReady);
+
       if (appState === 'LOBBY') {
         return (
           <div className="min-h-screen p-4 md:p-10 bg-green-950 flex flex-col items-center justify-center bg-[url('https://www.transparenttextures.com/patterns/stardust.png')]">
@@ -694,18 +707,18 @@
               <div className="flex flex-col md:flex-row justify-between items-center border-b-2 border-green-800/50 pb-6 mb-10">
                 <div>
                   <h2 className="text-4xl md:text-5xl font-black">LOBBY <span className="text-yellow-400 font-mono tracking-tighter">{roomId}</span></h2>
-                  <p className="text-green-400 font-bold uppercase tracking-widest text-sm mt-2"><i className="fa-solid fa-gamepad mr-2"></i> MODO: {roomData.mode}</p>
+                  <p className="text-green-400 font-bold uppercase tracking-widest text-sm mt-2"><i className="fa-solid fa-gamepad mr-2"></i> MODO: {roomData?.mode}</p>
                 </div>
                 <div className="bg-black/40 px-6 py-3 rounded-xl border border-green-900 mt-4 md:mt-0 font-bold">
-                  {Object.keys(roomData?.players||{}).length} / {roomData.mode === '1v1' ? 2 : 8} Treinadores
+                  {Object.keys(roomData?.players||{}).length} / {roomData?.mode === '1v1' ? 2 : 8} Treinadores
                 </div>
               </div>
               
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-12">
                 {Object.entries(roomData?.players||{}).map(([uid, p]) => (
                   <div key={uid} className="bg-gradient-to-b from-green-900/50 to-black/50 p-6 rounded-2xl border border-green-700 flex flex-col items-center gap-4 hover:-translate-y-2 transition shadow-lg">
-                    <div className={`w-16 h-16 rounded-full flex items-center justify-center shadow-inner text-2xl ${uid === roomData.hostUid ? 'bg-yellow-500/20 border-2 border-yellow-500 text-yellow-400' : 'bg-green-800 border-2 border-green-600 text-green-300'}`}>
-                      {uid === roomData.hostUid ? <i className="fa-solid fa-crown"></i> : <i className="fa-solid fa-user"></i>}
+                    <div className={`w-16 h-16 rounded-full flex items-center justify-center shadow-inner text-2xl ${uid === roomData?.hostUid ? 'bg-yellow-500/20 border-2 border-yellow-500 text-yellow-400' : 'bg-green-800 border-2 border-green-600 text-green-300'}`}>
+                      {uid === roomData?.hostUid ? <i className="fa-solid fa-crown"></i> : <i className="fa-solid fa-user"></i>}
                     </div>
                     <span className="font-black text-lg truncate w-full text-center tracking-tight">{p.name}</span>
                   </div>
@@ -872,8 +885,8 @@
       }
 
       if (appState === 'TOURNAMENT') {
-        const stageKey = roomData.stage === 1 ? 'quarters' : roomData.stage === 2 ? 'semis' : 'final';
-        const activeMatches = roomData.bracket ? roomData.bracket[stageKey] || [] : [];
+        const stageKey = roomData?.stage === 1 ? 'quarters' : roomData?.stage === 2 ? 'semis' : 'final';
+        const activeMatches = roomData?.bracket ? roomData?.bracket[stageKey] || [] : [];
         const myMatch = activeMatches.find(m => m.p1.uid === user.uid || m.p2.uid === user.uid);
 
         return (
@@ -883,19 +896,19 @@
             <div className="max-w-7xl mx-auto relative z-10">
               <div className="flex flex-col md:flex-row justify-between items-center mb-8 glass p-6 rounded-2xl border border-green-800/50 shadow-2xl">
                 <div className="text-center md:text-left mb-4 md:mb-0">
-                  <h1 className="text-3xl font-black text-yellow-400 flex items-center gap-3 tracking-tighter uppercase"><i className="fa-solid fa-trophy text-4xl"></i> {roomData.mode === '1v1' ? 'DUELO' : 'COPA DRAFT KINGS'}</h1>
+                  <h1 className="text-3xl font-black text-yellow-400 flex items-center gap-3 tracking-tighter uppercase"><i className="fa-solid fa-trophy text-4xl"></i> {roomData?.mode === '1v1' ? 'DUELO' : 'COPA DRAFT KINGS'}</h1>
                   <p className="text-green-500 font-bold tracking-widest text-sm mt-1 uppercase">FASE: {stageKey}</p>
                 </div>
                 
-                {isHost && roomData.stage < 4 && !activeMatches[0]?.played && (
+                {isHost && roomData?.stage < 4 && !activeMatches[0]?.played && (
                   <button onClick={simulateMatches} className="bg-red-600 hover:bg-red-500 text-white font-black py-4 px-10 rounded-xl shadow-[0_0_30px_rgba(220,38,38,0.5)] transition-all hover:scale-105 border border-red-400 text-xl"><i className="fa-solid fa-bolt mr-2"></i> INICIAR SIMULAÇÃO</button>
                 )}
-                {!isHost && roomData.stage < 4 && !activeMatches[0]?.played && (
+                {!isHost && roomData?.stage < 4 && !activeMatches[0]?.played && (
                   <div className="bg-black/50 px-6 py-3 rounded-lg border border-yellow-500/30 text-yellow-400 font-bold animate-pulse">Aguardando Host...</div>
                 )}
               </div>
 
-              {roomData.stage === 4 ? (
+              {roomData?.stage === 4 ? (
                 <div className="text-center mt-32 animate-slide-up">
                   <div className="relative inline-block">
                     <div className="absolute inset-0 bg-yellow-400 blur-[100px] opacity-30 rounded-full"></div>
