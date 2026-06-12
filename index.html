@@ -119,7 +119,7 @@
     firebase.initializeApp(myFirebaseConfig);
     const auth = firebase.auth();
     const db = firebase.database();
-    const APP_ID = 'draft-kings-goty-v3';
+    const APP_ID = 'draft-kings-goty-v4';
 
     const RAW_DB = `
       pele|Pelé|1970|Santos|99|ATA
@@ -185,6 +185,19 @@
       fabio|Fábio|2013|Cruzeiro|90|GOL
       pedro|Pedro|2022|Flamengo|89|ATA
       cano|Germán Cano|2022|Fluminense|89|ATA
+      diego|Diego Ribas|2002|Santos|89|MEI
+      kleber|Kleber Gladiador|2008|Palmeiras|86|ATA
+      valdivia|Valdívia|2008|Palmeiras|89|MEI
+      rocha|Guilherme Arana|2017|Corinthians|86|LAT
+      gil|Gil|2015|Corinthians|88|ZAG
+      prass|Fernando Prass|2015|Palmeiras|88|GOL
+      victor|Victor|2013|Atlético-MG|89|GOL
+      rever|Réver|2013|Atlético-MG|88|ZAG
+      juan|Juan|2009|Flamengo|88|ZAG
+      leo_moura|Marcelinho Carioca|1999|Corinthians|92|MEI
+      zidanilo|Danilo|2012|Corinthians|88|MEI
+      calleri|Calleri|2016|São Paulo|87|ATA
+      guerrero|Guerrero|2015|Corinthians|88|ATA
     `.trim().split('\n').map(line => {
       const [baseId, name, year, team, overall, pos] = line.trim().split('|');
       return { id: baseId + '_' + year, baseId, name, year: parseInt(year), team, overall: parseInt(overall), pos };
@@ -276,13 +289,9 @@
         floodLight.castShadow = true;
         floodLight.shadow.mapSize.width = 1024;
         floodLight.shadow.mapSize.height = 1024;
-        floodLight.shadow.camera.left = -30;
-        floodLight.shadow.camera.right = 30;
-        floodLight.shadow.camera.top = 20;
-        floodLight.shadow.camera.bottom = -20;
         scene.add(floodLight);
 
-        // 3. GERAÇÃO DO GRAMADO COM LINHAS BRANCAS (Procedural Canvas)
+        // 3. GERAÇÃO DO GRAMADO PROCEDURAL
         const fieldCanvas = document.createElement('canvas');
         fieldCanvas.width = 1024;
         fieldCanvas.height = 512;
@@ -294,19 +303,15 @@
             ctx.fillRect(i * (1024/20), 0, 1024/20, 512);
         }
         
-        // Linhas do Campo
+        // Linhas Brancas
         ctx.strokeStyle = 'rgba(255,255,255,0.7)';
         ctx.lineWidth = 4;
         ctx.beginPath();
-        // Bordas
-        ctx.rect(20, 20, 984, 472);
-        // Meio Campo
-        ctx.moveTo(512, 20); ctx.lineTo(512, 492);
-        // Círculo Central
-        ctx.arc(512, 256, 70, 0, Math.PI * 2);
-        // Áreas (Esquerda e Direita)
-        ctx.rect(20, 136, 120, 240);
-        ctx.rect(884, 136, 120, 240);
+        ctx.rect(20, 20, 984, 472); // Bordas
+        ctx.moveTo(512, 20); ctx.lineTo(512, 492); // Meio Campo
+        ctx.arc(512, 256, 70, 0, Math.PI * 2); // Circulo Central
+        ctx.rect(20, 136, 120, 240); // Area Esq
+        ctx.rect(884, 136, 120, 240); // Area Dir
         ctx.stroke();
 
         const fieldTexture = new THREE.CanvasTexture(fieldCanvas);
@@ -320,7 +325,7 @@
         field.receiveShadow = true;
         scene.add(field);
 
-        // 4. TRAVES (MODELAGEM 3D)
+        // 4. TRAVES
         const createGoal = (xPos) => {
             const goalGroup = new THREE.Group();
             const postGeo = new THREE.CylinderGeometry(0.15, 0.15, 3);
@@ -335,10 +340,10 @@
             goalGroup.position.set(xPos, 0, 0);
             return goalGroup;
         };
-        scene.add(createGoal(-29.5)); // Trave Esquerda
-        scene.add(createGoal(29.5));  // Trave Direita
+        scene.add(createGoal(-29.5));
+        scene.add(createGoal(29.5)); 
 
-        // 5. A BOLA (PBR Sphere)
+        // 5. BOLA
         const ballGeo = new THREE.SphereGeometry(0.4, 32, 32);
         const ballMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0.5 });
         const ball = new THREE.Mesh(ballGeo, ballMat);
@@ -346,8 +351,8 @@
         ball.position.set(0, 0.4, 0);
         scene.add(ball);
 
-        // 6. MOTOR DE ANIMAÇÃO E FÍSICA
-        const msPerMin = 333; // 30s match = 90 mins
+        // 6. ANIMAÇÃO
+        const msPerMin = 333; // 30s match = 90 mins virtuais
         let animationId;
         let targetX = 0;
         let targetZ = 0;
@@ -378,7 +383,6 @@
                 setS1(g1); setS2(g2);
             }
 
-            // Ler Momentum
             const lastMom = match.momentumData?.find(m => m.min <= displayMin);
             let currentMomVal = lastMom ? lastMom.val : 50;
             if (displayMin < 90) setMomentum(currentMomVal);
@@ -386,32 +390,29 @@
             const activeEvent = match.events.find(e => Math.abs(e.minute - currentVirtualMin) < 1.5);
             
             if (activeEvent) {
-               // Direciona a bola para a área do ataque
                if (activeEvent.teamId === match.p1.uid) { targetX = 25; targetZ = (Math.random()-0.5)*10; } 
                else { targetX = -25; targetZ = (Math.random()-0.5)*10; } 
             } else {
-               // Troca de passes baseada no Momentum (Tug of war no eixo X)
                targetX = ((currentMomVal - 50) / 50) * 15; 
                targetZ = Math.sin(currentVirtualMin * 2) * 8; 
             }
 
             if (currentVirtualMin >= 90) { targetX = 0; targetZ = 0; }
 
-            // Física de LERP + Pulo da bola
+            // LERP Física
             ball.position.x += (targetX - ball.position.x) * 0.08;
             ball.position.z += (targetZ - ball.position.z) * 0.08;
-            // Efeito de bola quicando com base na velocidade de deslocamento
             const speed = Math.abs(targetX - ball.position.x) + Math.abs(targetZ - ball.position.z);
             ball.position.y = 0.4 + Math.abs(Math.sin(currentVirtualMin * 5)) * (speed * 0.2);
             ball.rotation.z -= speed * 0.1;
 
-            // Camera Shake (Impacto Visual)
+            // Câmera Dinâmica
             if (baseShake > 0.01) {
               camera.position.x = (Math.random() - 0.5) * baseShake;
               camera.position.y = 20 + (Math.random() - 0.5) * baseShake;
               baseShake *= 0.9; 
             } else {
-              camera.position.x = 0;
+              camera.position.x = ball.position.x * 0.3; // Segue a bola suavemente
               camera.position.y = 20;
             }
           }
@@ -445,7 +446,7 @@
               <div className="flex-1 text-left font-black text-xl md:text-3xl truncate drop-shadow-lg">{match.p2.name}</div>
             </div>
 
-            {/* Barra de Momentum (Transmissão de TV) */}
+            {/* Barra de Momentum */}
             <div className="absolute bottom-0 left-0 w-full h-1.5 bg-gray-900 overflow-hidden flex z-30">
               <div className="h-full bg-blue-500 momentum-bar relative" style={{width: `${100 - momentum}%`}}></div>
               <div className="h-full bg-red-500 momentum-bar relative" style={{width: `${momentum}%`}}></div>
@@ -453,10 +454,10 @@
           </div>
 
           <div className="relative flex-1 bg-black/50">
-             {/* VISOR 3D DO ESTÁDIO */}
+             {/* VISOR 3D */}
              <div ref={mountRef} className="absolute inset-0 w-full h-full z-0"></div>
              
-             {/* FEED DE COMENTÁRIOS COM GRADIENTE SOBREPOSTO */}
+             {/* FEED DE COMENTÁRIOS */}
              <div className="absolute bottom-0 left-0 w-full h-2/3 bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none z-10 flex flex-col justify-end p-4">
                <div className="space-y-2 overflow-y-auto max-h-48 scrollbar-hide flex flex-col-reverse pointer-events-auto">
                  {events.length === 0 && <div className="text-center text-green-500/50 mb-4 font-bold text-lg animate-pulse">As equipes estudam o adversário...</div>}
@@ -502,12 +503,8 @@
 
       useEffect(() => {
         const init = async () => {
-          try {
-            await auth.signInAnonymously();
-          } catch(e) {
-            console.error("Auth Fail:", e);
-            setError("Erro crítico ao conectar no servidor. Ative o Login Anônimo no Firebase.");
-          }
+          try { await auth.signInAnonymously(); } 
+          catch(e) { console.error("Auth Fail:", e); setError("Erro crítico ao conectar no servidor. Ative o Login Anônimo no Firebase."); }
         };
         init();
         
@@ -575,19 +572,13 @@
         if (currentTeamLength >= 11) return;
         
         const requiredPos = FORMATIONS[myFormation][currentTeamLength];
-        
-        // Filtro Posicional com Proteção de Array
         let pool = RAW_DB.filter(p => p.pos === requiredPos && !seenIds.current.has(p.baseId));
         let options = pool.sort(() => 0.5 - Math.random()).slice(0, 3);
         
-        // Fallback procedural de segurança caso o DB esvazie para a posição
         let botIndex = 0;
         while (options.length < 3) {
            const mockId = `gen_${requiredPos}_${Date.now()}_${botIndex}`;
-           options.push({
-             id: mockId, baseId: mockId, name: `Talento da Base`, year: 2024, team: 'Academy', 
-             overall: 70 + Math.floor(Math.random()*12), pos: requiredPos
-           });
+           options.push({ id: mockId, baseId: mockId, name: `Talento da Base`, year: 2024, team: 'Academy', overall: 70 + Math.floor(Math.random()*12), pos: requiredPos });
            botIndex++;
         }
 
@@ -605,28 +596,20 @@
         let chemBoost = 0;
         const teamCounts = {};
         team.forEach(p => { teamCounts[p.team] = (teamCounts[p.team] || 0) + 1; });
-        Object.values(teamCounts).forEach(count => {
-           if(count >= 2) chemBoost += (count - 1) * 2; 
-        });
+        Object.values(teamCounts).forEach(count => { if(count >= 2) chemBoost += (count - 1) * 2; });
         return chemBoost;
       };
 
       const pickPlayer = async (player) => {
         const currentLength = myTeam.length;
-        if (currentLength >= 11) return; // Trava de segurança
+        if (currentLength >= 11) return; 
         
-        if (player.overall >= 93) {
-          SFX.walkout();
-          setWalkoutPlayer(player);
-          setTimeout(() => setWalkoutPlayer(null), 3000);
-        } else {
-          SFX.pick();
-        }
+        if (player.overall >= 93) { SFX.walkout(); setWalkoutPlayer(player); setTimeout(() => setWalkoutPlayer(null), 3000); } 
+        else { SFX.pick(); }
         
         const newTeam = [...myTeam, player];
         setMyTeam(newTeam);
         
-        // Se ainda não formou os 11, puxa próximo pacote. Se formou, fecha.
         if (newTeam.length < 11) {
           pullPacks(newTeam.length);
         } else {
@@ -636,9 +619,7 @@
           const finalOvr = Math.min(99, Math.round(baseOvr + chemOvr));
           
           try {
-            await db.ref(`games/${APP_ID}/${roomId}/players/${user.uid}`).update({
-              team: newTeam, overall: finalOvr, isReady: true
-            });
+            await db.ref(`games/${APP_ID}/${roomId}/players/${user.uid}`).update({ team: newTeam, overall: finalOvr, isReady: true });
           } catch(e) { console.error("Save error", e); }
         }
       };
@@ -671,20 +652,13 @@
            bracketPlayers.forEach(p => standings[p.uid] = { name: p.name, pts: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, gd: 0 });
            
            let matches = [];
-           for(let i=0; i<targetSize; i+=2) {
-             matches.push({ p1: bracketPlayers[i], p2: bracketPlayers[i+1], played: false, events: [] });
-           }
-           updates.stage = 1;
-           updates['bracket/league_matches'] = matches;
-           updates['bracket/standings'] = standings;
+           for(let i=0; i<targetSize; i+=2) { matches.push({ p1: bracketPlayers[i], p2: bracketPlayers[i+1], played: false, events: [] }); }
+           updates.stage = 1; updates['bracket/league_matches'] = matches; updates['bracket/standings'] = standings;
         } else {
            let matches = [];
-           for(let i=0; i<targetSize; i+=2) {
-             matches.push({ p1: bracketPlayers[i], p2: bracketPlayers[i+1], played: false, events: [] });
-           }
+           for(let i=0; i<targetSize; i+=2) { matches.push({ p1: bracketPlayers[i], p2: bracketPlayers[i+1], played: false, events: [] }); }
            let stageName = targetSize === 8 ? 'quarters' : targetSize === 4 ? 'semis' : 'final';
-           updates.stage = targetSize === 8 ? 1 : targetSize === 4 ? 2 : 3;
-           updates[`bracket/${stageName}`] = matches;
+           updates.stage = targetSize === 8 ? 1 : targetSize === 4 ? 2 : 3; updates[`bracket/${stageName}`] = matches;
         }
 
         players.forEach(p => { updates[`players/${p.uid}/isReady`] = false; });
@@ -694,28 +668,15 @@
       const simulateMatches = async () => {
         SFX.click();
         const startTime = Date.now() + 1500; 
-        
-        let stageKey = '';
-        if (roomData?.mode === 'league') stageKey = 'league_matches';
-        else stageKey = roomData?.stage === 1 ? 'quarters' : roomData?.stage === 2 ? 'semis' : 'final';
-        
+        let stageKey = roomData?.mode === 'league' ? 'league_matches' : roomData?.stage === 1 ? 'quarters' : roomData?.stage === 2 ? 'semis' : 'final';
         const matchesToSim = roomData?.bracket?.[stageKey] || [];
         if (matchesToSim.length === 0) return;
 
         const simulatedMatches = matchesToSim.map(match => {
-           let events = [];
-           let momentumData = [];
-           let s1=0, s2=0;
-           let currentMom = 50;
-           
-           const t1 = TACTICS[match.p1.tactic] || TACTICS['Equilibrado'];
-           const t2 = TACTICS[match.p2.tactic] || TACTICS['Equilibrado'];
-
-           const luck1 = (Math.random() * 20 - 10);
-           const luck2 = (Math.random() * 20 - 10);
-           const ovr1 = (match.p1.overall * t1.atkMod) + luck1; 
-           const ovr2 = (match.p2.overall * t2.atkMod) + luck2;
-           
+           let events = [], momentumData = [], s1=0, s2=0, currentMom = 50;
+           const t1 = TACTICS[match.p1.tactic] || TACTICS['Equilibrado'], t2 = TACTICS[match.p2.tactic] || TACTICS['Equilibrado'];
+           const luck1 = (Math.random() * 20 - 10), luck2 = (Math.random() * 20 - 10);
+           const ovr1 = (match.p1.overall * t1.atkMod) + luck1, ovr2 = (match.p2.overall * t2.atkMod) + luck2;
            const prob1 = Math.max(0.2, Math.min(0.8, ovr1 / (ovr1 + ovr2)));
 
            for(let min=1; min<=90; min++) {
@@ -726,27 +687,21 @@
              }
 
              let actionProb = 0.12; 
-             if (currentMom < 30) actionProb = 0.18; 
-             if (currentMom > 70) actionProb = 0.18; 
+             if (currentMom < 30 || currentMom > 70) actionProb = 0.18; 
 
              if(Math.random() < actionProb) { 
                const isP1 = Math.random() < (currentMom < 50 ? 0.7 : 0.3);
-               const att = isP1 ? match.p1 : match.p2;
-               const def = isP1 ? match.p2 : match.p1;
-               
+               const att = isP1 ? match.p1 : match.p2, def = isP1 ? match.p2 : match.p1;
                const roll = Math.random();
+               
                if(roll < 0.20) { 
                  s1 += isP1 ? 1 : 0; s2 += isP1 ? 0 : 1;
                  const goalTexts = [`GOLAÇO! ${att.name} fuzila pro fundo das redes!`, `É GOL! Troca de passes envolvente do ${att.name}!`, `QUE PINTURA! ${att.name} encobre o goleiro!`, `Pênalti cobrado com frieza. Gol do ${att.name}!`];
                  events.push({ minute: min, type: 'goal', teamId: att.uid, text: goalTexts[Math.floor(Math.random()*goalTexts.length)] });
                  currentMom = 50;
-               } else if(roll < 0.45) {
-                 events.push({ minute: min, type: 'save', teamId: def.uid, text: `MILAGRE! Goleiro do ${def.name} espalma na gaveta.` });
-               } else if(roll < 0.65) {
-                 events.push({ minute: min, type: 'foul', teamId: def.uid, text: `Falta dura da defesa do ${def.name}. O juiz dá amarelo!` });
-               } else {
-                 events.push({ minute: min, type: 'attack', teamId: att.uid, text: `UHH! ${att.name} enche o pé e a bola tira tinta da trave.` });
-               }
+               } else if(roll < 0.45) { events.push({ minute: min, type: 'save', teamId: def.uid, text: `MILAGRE! Goleiro do ${def.name} espalma na gaveta.` });
+               } else if(roll < 0.65) { events.push({ minute: min, type: 'foul', teamId: def.uid, text: `Falta dura da defesa do ${def.name}. O juiz dá amarelo!` });
+               } else { events.push({ minute: min, type: 'attack', teamId: att.uid, text: `UHH! ${att.name} enche o pé e a bola tira tinta da trave.` }); }
              }
            }
 
@@ -755,13 +710,9 @@
              if(Math.random() > 0.5) { s1++; events.push({ minute: 90, type: 'goal', teamId: match.p1.uid, text: `${match.p1.name} VENCE NOS PÊNALTIS!` }); }
              else { s2++; events.push({ minute: 90, type: 'goal', teamId: match.p2.uid, text: `${match.p2.name} VENCE NOS PÊNALTIS!` }); }
            }
-           
            events.push({ minute: 90, type: 'info', text: 'Apita o árbitro! Fim de papo.' });
            
-           let winner = null;
-           if (s1 > s2) winner = match.p1;
-           else if (s2 > s1) winner = match.p2;
-           
+           let winner = null; if (s1 > s2) winner = match.p1; else if (s2 > s1) winner = match.p2;
            return { ...match, startTime, played: true, events, momentumData, s1, s2, winner };
         });
 
@@ -769,37 +720,28 @@
         
         setTimeout(async () => {
            if (roomData?.mode === 'league') {
-              // Engine Liga (Round Robin Update)
               const std = roomData.bracket.standings || {};
               simulatedMatches.forEach(m => {
                  if(m.s1 > m.s2) { std[m.p1.uid].pts+=3; std[m.p1.uid].w++; std[m.p2.uid].l++; }
                  else if(m.s2 > m.s1) { std[m.p2.uid].pts+=3; std[m.p2.uid].w++; std[m.p1.uid].l++; }
                  else { std[m.p1.uid].pts++; std[m.p2.uid].pts++; std[m.p1.uid].d++; std[m.p2.uid].d++; }
-                 
                  std[m.p1.uid].gf += m.s1; std[m.p1.uid].ga += m.s2; std[m.p1.uid].gd = std[m.p1.uid].gf - std[m.p1.uid].ga;
                  std[m.p2.uid].gf += m.s2; std[m.p2.uid].ga += m.s1; std[m.p2.uid].gd = std[m.p2.uid].gf - std[m.p2.uid].ga;
               });
               await db.ref(`games/${APP_ID}/${roomId}`).update({ ['bracket/standings']: std, stage: 4 }); 
            } else {
-             // Engine Mata-Mata
              const nextStage = roomData?.stage === 1 ? 'semis' : roomData?.stage === 2 ? 'final' : 'campeao';
              if (nextStage !== 'campeao') {
                let nextMatches = [];
-               for(let i=0; i<simulatedMatches.length; i+=2) {
-                 nextMatches.push({ p1: simulatedMatches[i].winner, p2: simulatedMatches[i+1].winner, played: false, events: [] });
-               }
+               for(let i=0; i<simulatedMatches.length; i+=2) { nextMatches.push({ p1: simulatedMatches[i].winner, p2: simulatedMatches[i+1].winner, played: false, events: [] }); }
                await db.ref(`games/${APP_ID}/${roomId}`).update({ [`bracket/${nextStage}`]: nextMatches, stage: (roomData?.stage || 1) + 1 });
-             } else {
-               await db.ref(`games/${APP_ID}/${roomId}`).update({ stage: 4 }); 
-             }
+             } else { await db.ref(`games/${APP_ID}/${roomId}`).update({ stage: 4 }); }
            }
         }, 33000); 
       };
 
       if (isAuthLoading) return <div className="min-h-screen flex items-center justify-center bg-black text-green-500 font-black text-2xl animate-pulse"><i className="fa-solid fa-satellite-dish mr-3"></i> Conectando à Rede Neural...</div>;
-      
-      if (appState === 'INIT') return <div className="min-h-screen flex items-center justify-center bg-black"><button onClick={initEngine} className="glass p-16 rounded-[3rem] flex flex-col items-center hover:scale-105 transition-all shadow-[0_0_80px_rgba(250,204,21,0.3)] border-2 border-yellow-500/50 group"><i className="fa-solid fa-power-off text-8xl text-yellow-500 mb-8 group-hover:animate-pulse"></i><h1 className="text-6xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-600 drop-shadow-lg">INICIALIZAR ENGINE 3D</h1><p className="text-gray-400 mt-6 font-bold uppercase tracking-widest text-sm">Habilita Som, GPU e Firebase Seguros</p></button></div>;
-      
+      if (appState === 'INIT') return <div className="min-h-screen flex items-center justify-center bg-black"><button onClick={initEngine} className="glass p-16 rounded-[3rem] flex flex-col items-center hover:scale-105 transition-all shadow-[0_0_80px_rgba(250,204,21,0.3)] border-2 border-yellow-500/50 group"><i className="fa-solid fa-power-off text-8xl text-yellow-500 mb-8 group-hover:animate-pulse"></i><h1 className="text-6xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-600 drop-shadow-lg">INICIALIZAR ENGINE 3D</h1></button></div>;
       if (appState === 'MENU') return (
         <div className="min-h-screen flex items-center justify-center pitch-bg p-4"><div className="glass p-10 rounded-3xl w-full max-w-md shadow-2xl animate-slide-up border border-green-500/30 relative overflow-hidden"><div className="text-center mb-10"><i className="fa-solid fa-trophy text-7xl text-yellow-400 drop-shadow-[0_0_30px_rgba(250,204,21,0.6)] mb-4 animate-pulse-fast"></i><h1 className="text-5xl font-black italic tracking-tighter text-white">DRAFT KINGS</h1></div><div className="space-y-5"><input className="w-full p-4 bg-black/60 rounded-xl text-white outline-none border-2 border-green-900 focus:border-yellow-400 font-bold transition text-lg" placeholder="Seu Nome" value={playerName} onChange={e=>setPlayerName(e.target.value)} /><div className="flex gap-3"><input className="w-full p-4 bg-black/60 rounded-xl text-white outline-none border-2 border-green-900 uppercase focus:border-yellow-400 font-black transition text-lg" placeholder="SALA" value={roomId} onChange={e=>setRoomId(e.target.value.toUpperCase())} /><select className="p-4 bg-black/60 rounded-xl text-white outline-none border-2 border-green-900 font-bold" value={gameMode} onChange={e=>setGameMode(e.target.value)}><option value="knockout">MATA-MATA</option><option value="league">LIGA</option><option value="1v1">DUELO X1</option></select></div>{error && <div className="text-red-400 font-black text-sm text-center bg-red-950/80 border border-red-500 p-3 rounded-xl shadow-lg">{error}</div>}<div className="pt-4 space-y-3"><button onClick={handleCreateRoom} className="w-full bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-black py-4 rounded-xl shadow-[0_0_20px_rgba(250,204,21,0.4)] hover:scale-[1.03] transition text-lg">FUNDAR LIGA</button><button onClick={handleJoinRoom} className="w-full border-2 border-green-600 text-green-400 hover:bg-green-600 hover:text-white font-black py-4 rounded-xl transition text-lg">ENTRAR NA LIGA</button></div></div></div></div>
       );
@@ -858,16 +800,12 @@
                   <div className="lg:col-span-3">{myMatch ? <MatchViewer3D match={myMatch} /> : activeMatches[0] ? <MatchViewer3D match={activeMatches[0]} /> : null}</div>
                   
                   <div className="flex flex-col gap-4">
-                    {/* LEAGUE STANDINGS */}
                     {isLeague && roomData.bracket.standings && (
                       <div className="glass p-4 rounded-xl border border-blue-800/50 mb-4">
                         <h3 className="text-blue-400 font-black text-center mb-2 uppercase tracking-widest text-sm">Classificação</h3>
                         <div className="space-y-1">
                           {Object.values(roomData.bracket.standings).sort((a,b) => b.pts - a.pts || b.gd - a.gd).map((t, i) => (
-                             <div key={i} className="flex justify-between text-sm bg-black/40 p-1 px-2 rounded">
-                                <span className="truncate w-24 font-bold">{i+1}. {t.name}</span>
-                                <span className="text-yellow-400 font-black">{t.pts}</span>
-                             </div>
+                             <div key={i} className="flex justify-between text-sm bg-black/40 p-1 px-2 rounded"><span className="truncate w-24 font-bold">{i+1}. {t.name}</span><span className="text-yellow-400 font-black">{t.pts}</span></div>
                           ))}
                         </div>
                       </div>
