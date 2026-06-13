@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Brasfoot Draft Kings: Resenha Edition</title>
+  <title>Brasfoot Draft Kings: Online Edition</title>
 
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -11,21 +11,12 @@
   <!-- FontAwesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   
-  <!-- Google Fonts: Oswald for sports vibe -->
-  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-  
   <!-- React & ReactDOM -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   
   <!-- Babel -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  
-  <!-- Tone.js (Neural Audio Engine) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
-
-  <!-- Three.js (WebGL 3D Engine) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
   <!-- Firebase Compat (RTDB) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -36,70 +27,53 @@
     tailwind.config = {
       theme: {
         extend: {
-          fontFamily: {
-            sans: ['Inter', 'sans-serif'],
-            sports: ['Oswald', 'sans-serif'],
+          colors: { 
+            bgDark: '#0B1319', 
+            cardDark: '#15202B',
+            accent: '#00E676'
           },
-          colors: { pitch: '#031206', accent: '#ffcc00' },
           animation: {
-            'shake': 'shake 0.4s cubic-bezier(.36,.07,.19,.97) both',
-            'flare': 'flare 1s ease-out forwards',
             'slide-up': 'slideUp 0.3s ease-out forwards',
-            'walkout': 'walkout 2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
-            'pulse-fast': 'pulse 0.8s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-            'flash-goal': 'flashGoal 1s ease-out forwards'
+            'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite'
           },
           keyframes: {
-            shake: { '10%,90%':{transform:'translate3d(-5px,0,0)'},'20%,80%':{transform:'translate3d(6px,0,0)'},'30%,50%,70%':{transform:'translate3d(-10px,0,0)'},'40%,60%':{transform:'translate3d(10px,0,0)'} },
-            flare: { '0%': { transform: 'scale(0.8)', opacity: 0 }, '50%': { opacity: 1 }, '100%': { transform: 'scale(1.5)', opacity: 0 } },
-            slideUp: { '0%': { opacity: 0, transform: 'translateY(40px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
-            walkout: { '0%': { opacity: 0, transform: 'scale(0.5) translateY(200px) rotateX(-45deg)', filter:'blur(10px)' }, '100%': { opacity: 1, transform: 'scale(1) translateY(0) rotateX(0)', filter:'blur(0px)' } },
-            flashGoal: { '0%': { backgroundColor: '#eab308' }, '100%': { backgroundColor: 'transparent' } }
+            slideUp: { '0%': { opacity: 0, transform: 'translateY(20px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } }
           }
         }
       }
     }
   </script>
   <style>
-    body { background-color: #020803; color: white; overflow-x: hidden; user-select: none; }
-    .glass { background: rgba(5, 24, 10, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(74, 222, 128, 0.15); }
-    .pitch-bg { background-image: radial-gradient(circle at center, rgba(34, 197, 94, 0.1) 0%, transparent 70%), linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px); background-size: 100% 100%, 30px 30px, 30px 30px; box-shadow: inset 0 0 200px rgba(0,0,0,0.99); }
-    
-    /* Holographic Card Effect */
-    .card-3d { transition: transform 0.15s ease-out, box-shadow 0.15s ease-out; transform-style: preserve-3d; cursor: pointer; position: relative; overflow: hidden; }
-    .card-3d::before { content: ''; position: absolute; inset: 0; background: linear-gradient(125deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 40%, rgba(255,255,255,0) 60%); transform: translateX(-100%); transition: transform 0.5s ease; mix-blend-mode: overlay; z-index: 20; }
-    .card-3d:hover { transform: scale(1.08) translateY(-10px) rotateX(10deg); z-index: 50; }
-    .card-3d:hover::before { transform: translateX(100%); }
-    .card-gold { background: linear-gradient(135deg, #a16207 0%, #eab308 50%, #ca8a04 100%); border: 2px solid #fef08a; color: #422006; box-shadow: inset 0 0 20px rgba(0,0,0,0.5), 0 10px 30px rgba(234,179,8,0.3); }
-    .card-silver { background: linear-gradient(135deg, #475569 0%, #94a3b8 50%, #64748b 100%); border: 2px solid #e2e8f0; color: #0f172a; box-shadow: inset 0 0 20px rgba(0,0,0,0.5), 0 10px 30px rgba(255,255,255,0.1); }
-    .card-bronze { background: linear-gradient(135deg, #78350f 0%, #b45309 50%, #92400e 100%); border: 2px solid #fcd34d; color: #fffbeb; box-shadow: inset 0 0 20px rgba(0,0,0,0.5), 0 10px 30px rgba(180,83,9,0.2); }
-    .card-lenda { background: linear-gradient(135deg, #0f172a 0%, #3b82f6 50%, #020617 100%); border: 2px solid #60a5fa; color: white; box-shadow: inset 0 0 30px rgba(0,0,0,0.8), 0 0 40px rgba(59,130,246,0.6); }
-
-    .momentum-bar { transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-    canvas { display: block; outline: none; border-radius: 12px; }
-    ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #000; } ::-webkit-scrollbar-thumb { background: #166534; border-radius: 10px; }
+    body { background-color: #0B1319; color: #E1E8ED; font-family: 'Inter', system-ui, -apple-system, sans-serif; overflow-x: hidden; user-select: none; }
+    .manager-card { background: #15202B; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 6px rgba(0,0,0,0.3); border-radius: 1rem; }
+    .badge-v { background-color: #00E676; color: #000; font-weight: 900; }
+    .badge-e { background-color: #FFD54F; color: #000; font-weight: 900; }
+    .badge-d { background-color: #FF5252; color: #FFF; font-weight: 900; }
+    ::-webkit-scrollbar { width: 6px; } 
+    ::-webkit-scrollbar-track { background: #0B1319; } 
+    ::-webkit-scrollbar-thumb { background: #38444D; border-radius: 10px; }
   </style>
 </head>
 <body>
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useRef, useMemo, Component } = React;
+    const { useState, useEffect, useRef, useMemo } = React;
 
-    class ErrorBoundary extends Component {
+    //    class ErrorBoundary extends React.Component {
       constructor(props) { super(props); this.state = { hasError: false, error: null }; }
       static getDerivedStateFromError(error) { return { hasError: true, error }; }
       render() {
         if (this.state.hasError) {
           return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-red-950 text-white p-8">
-              <i className="fa-solid fa-triangle-exclamation text-7xl text-red-500 mb-6 animate-pulse"></i>
-              <h1 className="text-4xl font-sports font-bold mb-4 uppercase">Pane no Sistema!</h1>
-              <p className="text-xl text-red-300 mb-8">A engine colidiu com um erro, mas nós seguramos o crash.</p>
+            <div className="min-h-screen flex flex-col items-center justify-center bg-red-950 text-white p-8 text-center">
+              <i className="fa-solid fa-triangle-exclamation text-7xl text-red-500 mb-6"></i>
+              <h1 className="text-4xl font-black mb-4 uppercase">Pane no Sistema Evitada</h1>
+              <p className="text-xl text-red-300 mb-8">Capturamos um erro antes de gerar a Tela Preta.</p>
               <div className="bg-black/50 p-4 rounded-xl border border-red-500/30 text-sm font-mono max-w-2xl overflow-auto text-left mb-8 text-red-400">
                 {this.state.error?.toString()}
               </div>
-              <button onClick={() => window.location.reload()} className="bg-red-600 hover:bg-red-500 px-8 py-4 rounded-xl font-bold font-sports text-2xl shadow-lg transition">REINICIAR ENGINE</button>
+              <button onClick={() => window.location.reload()} className="bg-red-600 hover:bg-red-500 px-8 py-4 rounded-xl font-bold shadow-lg transition">REINICIAR SISTEMA</button>
             </div>
           );
         }
@@ -107,623 +81,603 @@
       }
     }
 
-    const SFX = {
-      ready: false, synth: null, kick: null, noise: null, whistleSynth: null,
-      init: async () => {
-        if(SFX.ready) return;
-        await Tone.start();
-        SFX.synth = new Tone.PolySynth(Tone.Synth).toDestination();
-        SFX.synth.volume.value = -8;
-        SFX.whistleSynth = new Tone.Synth({ oscillator: { type: "triangle" }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.5, release: 1 } }).toDestination();
-        SFX.whistleSynth.volume.value = -5;
-        SFX.kick = new Tone.MembraneSynth({ pitchDecay: 0.05, octaves: 10, oscillator: { type: "sine" } }).toDestination();
-        SFX.kick.volume.value = 8;
-        const filter = new Tone.Filter(800, "lowpass").toDestination();
-        SFX.noise = new Tone.NoiseSynth({ noise: { type: "brown" }, envelope: { attack: 0.5, decay: 0.1, sustain: 1, release: 2 } }).connect(filter);
-        SFX.noise.volume.value = -12;
-        SFX.ready = true;
-      },
-      click: () => SFX.ready && SFX.synth.triggerAttackRelease(["C4"], "32n"),
-      pick: () => SFX.ready && SFX.synth.triggerAttackRelease(["E4", "G4"], "16n"),
-      walkout: () => {
-        if(!SFX.ready) return;
-        SFX.kick.triggerAttackRelease("C1", "1n");
-        SFX.synth.triggerAttackRelease(["C3", "G3", "C4"], "1n");
-      },
-      whistle: () => { 
-        if(!SFX.ready) return;
-        SFX.whistleSynth.triggerAttackRelease("C6", "16n"); 
-        setTimeout(()=>SFX.whistleSynth.triggerAttackRelease("C6", "8n"), 150); 
-      },
-      goal: () => { 
-        if(!SFX.ready) return;
-        SFX.kick.triggerAttackRelease("C1", "2n"); 
-        SFX.synth.triggerAttackRelease(["C4","E4","G4","C5"], "2n");
-        SFX.noise.triggerAttackRelease("1n");
-      },
-      foul: () => SFX.ready && SFX.synth.triggerAttackRelease(["G2", "B2"], "8n"),
-      post: () => SFX.ready && SFX.synth.triggerAttackRelease(["C5"], "32n")
-    };
-
-    const myFirebaseConfig = {
+    //    firebase.initializeApp({
       apiKey: "AIzaSyBhFf89G1chtLnX73oNujjJTtuMMcqnQWQ",
       authDomain: "game-resenha.firebaseapp.com",
       projectId: "game-resenha",
       storageBucket: "game-resenha.firebasestorage.app",
       messagingSenderId: "270816875",
       appId: "1:270816875:web:b5a11827a82263984c432e"
-    };
-
-    firebase.initializeApp(myFirebaseConfig);
+    });
     const auth = firebase.auth();
     const db = firebase.database();
-    const APP_ID = 'draft-kings-resenha-v1';
+    const APP_ID = 'brasfoot-online-v3'; // Nova chave para não conflitar com testes anteriores
 
-    // Array Limpo e seguro contra erros de split string.
-    const RAW_DB = [
-      { id: 'pele_70', baseId: 'pele', name: 'Pelé', year: 1970, team: 'Santos', overall: 99, pos: 'ATA' },
-      { id: 'zico_81', baseId: 'zico', name: 'Zico', year: 1981, team: 'Flamengo', overall: 98, pos: 'MEI' },
-      { id: 'romario_00', baseId: 'romario', name: 'Romário', year: 2000, team: 'Vasco', overall: 97, pos: 'ATA' },
-      { id: 'ronaldo_96', baseId: 'ronaldo', name: 'Ronaldo', year: 1996, team: 'Cruzeiro', overall: 97, pos: 'ATA' },
-      { id: 'neymar_11', baseId: 'neymar', name: 'Neymar Jr', year: 2011, team: 'Santos', overall: 96, pos: 'PON' },
-      { id: 'neymar_19', baseId: 'neymar', name: 'Neymar Jr', year: 2019, team: 'PSG', overall: 92, pos: 'PON' },
-      { id: 'ceni_05', baseId: 'ceni', name: 'Rogério Ceni', year: 2005, team: 'São Paulo', overall: 94, pos: 'GOL' },
-      { id: 'marcos_99', baseId: 'marcos', name: 'São Marcos', year: 1999, team: 'Palmeiras', overall: 94, pos: 'GOL' },
-      { id: 'dida_99', baseId: 'dida', name: 'Dida', year: 1999, team: 'Corinthians', overall: 94, pos: 'GOL' },
-      { id: 'taffarel_98', baseId: 'taffarel', name: 'Taffarel', year: 1998, team: 'Atlético-MG', overall: 93, pos: 'GOL' },
-      { id: 'cassio_12', baseId: 'cassio', name: 'Cássio', year: 2012, team: 'Corinthians', overall: 92, pos: 'GOL' },
-      { id: 'rcarlos_10', baseId: 'rcarlos', name: 'Roberto Carlos', year: 2010, team: 'Corinthians', overall: 93, pos: 'LAT' },
-      { id: 'cafu_93', baseId: 'cafu', name: 'Cafu', year: 1993, team: 'São Paulo', overall: 94, pos: 'LAT' },
-      { id: 'marcelo_23', baseId: 'marcelo', name: 'Marcelo', year: 2023, team: 'Fluminense', overall: 88, pos: 'LAT' },
-      { id: 'fagner_17', baseId: 'fagner', name: 'Fagner', year: 2017, team: 'Corinthians', overall: 88, pos: 'LAT' },
-      { id: 'arana_21', baseId: 'arana', name: 'G. Arana', year: 2021, team: 'Atlético-MG', overall: 86, pos: 'LAT' },
-      { id: 'gamarra_98', baseId: 'gamarra', name: 'Gamarra', year: 1998, team: 'Corinthians', overall: 94, pos: 'ZAG' },
-      { id: 'aldair_95', baseId: 'aldair', name: 'Aldair', year: 1995, team: 'Roma', overall: 93, pos: 'ZAG' },
-      { id: 'lugano_05', baseId: 'lugano', name: 'Lugano', year: 2005, team: 'São Paulo', overall: 92, pos: 'ZAG' },
-      { id: 'tsilva_08', baseId: 'tsilva', name: 'Thiago Silva', year: 2008, team: 'Fluminense', overall: 92, pos: 'ZAG' },
-      { id: 'gomez_20', baseId: 'gomez', name: 'Gustavo Gómez', year: 2020, team: 'Palmeiras', overall: 91, pos: 'ZAG' },
-      { id: 'geromel_17', baseId: 'geromel', name: 'Geromel', year: 2017, team: 'Grêmio', overall: 91, pos: 'ZAG' },
-      { id: 'msilva_94', baseId: 'msilva', name: 'Mauro Silva', year: 1994, team: 'Bragantino', overall: 93, pos: 'VOL' },
-      { id: 'dunga_99', baseId: 'dunga', name: 'Dunga', year: 1999, team: 'Internacional', overall: 91, pos: 'VOL' },
-      { id: 'rincon_99', baseId: 'rincon', name: 'Rincón', year: 1999, team: 'Corinthians', overall: 91, pos: 'VOL' },
-      { id: 'vampeta_99', baseId: 'vampeta', name: 'Vampeta', year: 1999, team: 'Corinthians', overall: 90, pos: 'VOL' },
-      { id: 'fmelo_18', baseId: 'fmelo', name: 'Felipe Melo', year: 2018, team: 'Palmeiras', overall: 87, pos: 'VOL' },
-      { id: 'alex_03', baseId: 'alex', name: 'Alex', year: 2003, team: 'Cruzeiro', overall: 95, pos: 'MEI' },
-      { id: 'r10_11', baseId: 'r10', name: 'Ronaldinho', year: 2011, team: 'Flamengo', overall: 93, pos: 'MEI' },
-      { id: 'kaka_02', baseId: 'kaka', name: 'Kaká', year: 2002, team: 'São Paulo', overall: 92, pos: 'MEI' },
-      { id: 'arrasca_19', baseId: 'arrascaeta', name: 'Arrascaeta', year: 2019, team: 'Flamengo', overall: 92, pos: 'MEI' },
-      { id: 'conca_10', baseId: 'conca', name: 'Conca', year: 2010, team: 'Fluminense', overall: 92, pos: 'MEI' },
-      { id: 'pet_09', baseId: 'petkovic', name: 'Petkovic', year: 2009, team: 'Flamengo', overall: 91, pos: 'MEI' },
-      { id: 'ganso_10', baseId: 'ganso', name: 'PH Ganso', year: 2010, team: 'Santos', overall: 91, pos: 'MEI' },
-      { id: 'edmundo_97', baseId: 'edmundo', name: 'Edmundo', year: 1997, team: 'Vasco', overall: 96, pos: 'ATA' },
-      { id: 'adriano_09', baseId: 'adriano', name: 'Adriano Imp.', year: 2009, team: 'Flamengo', overall: 93, pos: 'ATA' },
-      { id: 'bh_19', baseId: 'bh', name: 'Bruno Henrique', year: 2019, team: 'Flamengo', overall: 92, pos: 'PON' },
-      { id: 'gabigol_19', baseId: 'gabigol', name: 'Gabigol', year: 2019, team: 'Flamengo', overall: 92, pos: 'ATA' },
-      { id: 'dudu_18', baseId: 'dudu', name: 'Dudu', year: 2018, team: 'Palmeiras', overall: 90, pos: 'PON' },
-      { id: 'hulk_21', baseId: 'hulk', name: 'Hulk', year: 2021, team: 'Atlético-MG', overall: 91, pos: 'ATA' },
-      { id: 'fred_12', baseId: 'fred', name: 'Fred', year: 2012, team: 'Fluminense', overall: 91, pos: 'ATA' },
-      { id: 'vini_17', baseId: 'vini', name: 'Vini Jr', year: 2017, team: 'Flamengo', overall: 82, pos: 'PON' },
-      { id: 'endrick_23', baseId: 'endrick', name: 'Endrick', year: 2023, team: 'Palmeiras', overall: 85, pos: 'ATA' },
-      { id: 'ribamar_19', baseId: 'ribamar', name: 'Ribamar', year: 2019, team: 'Vasco', overall: 72, pos: 'ATA' },
-      { id: 'apodi_15', baseId: 'apodi', name: 'Apodi', year: 2015, team: 'Chapecoense', overall: 78, pos: 'LAT' },
-      { id: 'obina_09', baseId: 'obina', name: 'Obina', year: 2009, team: 'Palmeiras', overall: 82, pos: 'ATA' }
+    const RAW_DB = `
+      pele|Pelé|1970|Santos|99|ATA
+      zico|Zico|1981|Flamengo|98|MEI
+      romario|Romário|2000|Vasco|97|ATA
+      ronaldo|Ronaldo|1996|Cruzeiro|97|ATA
+      neymar|Neymar Jr|2011|Santos|96|PON
+      rcarlos|Roberto Carlos|2010|Corinthians|93|LAT
+      cafu|Cafu|1993|São Paulo|94|LAT
+      ceni|Rogério Ceni|2005|São Paulo|94|GOL
+      dida|Dida|1999|Corinthians|94|GOL
+      taffarel|Taffarel|1998|Atlético-MG|93|GOL
+      marcos|São Marcos|1999|Palmeiras|94|GOL
+      cassio|Cássio|2012|Corinthians|92|GOL
+      gamarra|Gamarra|1998|Corinthians|94|ZAG
+      aldair|Aldair|1995|Roma|93|ZAG
+      lugano|Lugano|2005|São Paulo|92|ZAG
+      gomez|Gustavo Gómez|2020|Palmeiras|91|ZAG
+      tsilva|Thiago Silva|2008|Fluminense|92|ZAG
+      msilva|Mauro Silva|1994|Bragantino|93|VOL
+      dunga|Dunga|1999|Inter|91|VOL
+      mineiro|Mineiro|2005|São Paulo|90|VOL
+      vampeta|Vampeta|1999|Corinthians|90|VOL
+      rincon|Rincón|1999|Corinthians|91|VOL
+      kaka|Kaká|2002|São Paulo|92|MEI
+      alex|Alex|2003|Cruzeiro|95|MEI
+      r10|Ronaldinho|2011|Flamengo|93|MEI
+      arrasca|Arrascaeta|2019|Flamengo|92|MEI
+      everton|Éverton Ribeiro|2019|Flamengo|90|MEI
+      conca|Conca|2010|Fluminense|92|MEI
+      edmundo|Edmundo|1997|Vasco|96|ATA
+      adriano|Adriano Imp.|2009|Flamengo|93|ATA
+      bh|Bruno Henrique|2019|Flamengo|92|PON
+      gabigol|Gabigol|2019|Flamengo|92|ATA
+      dudu|Dudu|2018|Palmeiras|90|PON
+      vini|Vini Jr|2017|Flamengo|82|PON
+      hulk|Hulk|2021|Atlético-MG|91|ATA
+      paulinho|Paulinho|2012|Corinthians|91|VOL
+      renato|Renato Augusto|2015|Corinthians|91|MEI
+      ganso|PH Ganso|2010|Santos|91|MEI
+      dale|D'Alessandro|2010|Inter|91|MEI
+      fernandao|Fernandão|2006|Inter|90|ATA
+      luan|Luan|2017|Grêmio|91|MEI
+      fred|Fred|2012|Fluminense|91|ATA
+      marcelo|Marcelo|2023|Fluminense|88|LAT
+      fagner|Fagner|2017|Corinthians|88|LAT
+      dede|Dedé|2013|Cruzeiro|90|ZAG
+      rever|Réver|2013|Atlético-MG|88|ZAG
+      miranda|Miranda|2008|São Paulo|91|ZAG
+      apodi|Apodi|2015|Chapecoense|78|LAT
+      ribamar|Ribamar|2019|Vasco|72|ATA
+      obina|Obina|2009|Palmeiras|82|ATA
+    `.trim().split('\n').map(line => {
+      const [baseId, name, year, team, overall, pos] = line.trim().split('|');
+      return { id: baseId + '_' + year, baseId, name, year: parseInt(year), team, overall: parseInt(overall), pos };
+    });
+
+    const CPU_TEAMS = [
+      "Palmeiras 1999", "São Paulo 2005", "Flamengo 2019", "Corinthians 2012", 
+      "Vasco 2000", "Cruzeiro 2003", "Santos 2011", "Grêmio 2017", 
+      "Atlético-MG 2013", "Internacional 2006", "Fluminense 2012", "Athletico-PR 2001",
+      "Botafogo 1995", "Sport 1987", "Guarani 1978", "Coritiba 1978",
+      "Bahia 2001", "Goiás 1990", "São Caetano 2002"
     ];
 
-    const FORMATIONS = {
-      '4-3-3': ['GOL', 'LAT', 'ZAG', 'ZAG', 'LAT', 'VOL', 'MEI', 'MEI', 'PON', 'ATA', 'PON'],
-      '4-4-2': ['GOL', 'LAT', 'ZAG', 'ZAG', 'LAT', 'VOL', 'VOL', 'MEI', 'MEI', 'ATA', 'ATA'],
-      '3-5-2': ['GOL', 'ZAG', 'ZAG', 'ZAG', 'VOL', 'VOL', 'LAT', 'LAT', 'MEI', 'ATA', 'ATA'],
-      '4-2-3-1': ['GOL', 'LAT', 'ZAG', 'ZAG', 'LAT', 'VOL', 'VOL', 'MEI', 'PON', 'PON', 'ATA']
-    };
-
-    const TACTICS = {
-      'Kamikaze': { desc: 'Ataque Total. A base da resenha.', atkMod: 1.5, defMod: 0.6 },
-      'Equilibrado': { desc: 'Futebol moderno e pragmático.', atkMod: 1.0, defMod: 1.0 },
-      'Retranca': { desc: 'Ônibus na zaga. Joga por uma bola.', atkMod: 0.5, defMod: 1.5 }
-    };
-
-    const BOT_NAMES = ["Íbis SC", "Tabajara FC", "Olaria", "Catadão da Esquina", "Amigos do Neymar", "Resenha FC", "Time Sem Colete"];
-
-    // NARRATIVAS BRASILEIRAS (A Emoção do Jogo)
-    const DIALOGS = {
-      goal: [
-        "PUMBA! {att} mandou um foguete do meio da rua e guardou!",
-        "GOLAÇO! {att} deixou o zagueiro no chão e cavou por cima do goleiro!",
-        "TÁ LÁ DENTRO! {att} testou firme pro fundo do barbante!",
-        "QUE PINTURA! Toca a música, {att} faz a festa da torcida!"
-      ],
-      save: [
-        "MILAGRE! {def} voou na gaveta e foi buscar!",
-        "FRANG... NÃO! {def} defende no susto com o pé!",
-        "ESPALMA {def}! A bola ia na coruja!"
-      ],
-      foul: [
-        "CENAS LAMENTÁVEIS! {def} chegou rasgando. O juiz dá amarelo!",
-        "QUE ISSO! {def} deixou as travas na canela. Falta dura!",
-        "O VAR CHAMA! O juiz foi olhar... Amarelo para {def}!"
-      ],
-      attack: [
-        "UHHH! {att} chapa de primeira e a bola lambe a trave!",
-        "INACREDITÁVEL FUTEBOL CLUBE! {att} isola na pequena área!",
-        "Quase o gol de {att}, a torcida já gritava..."
-      ],
-      red_card: [
-        "RUA! {def} perdeu a cabeça e tomou vermelho direto!",
-        "O VAR DEU VERMELHO! {def} expulso por agressão!"
-      ]
-    };
-
-    const PlayerCard = ({ player, onClick, hidden = false }) => {
-      if (!player) return <div className="w-40 h-56 border-2 border-dashed border-white/20 rounded-xl bg-black/40 flex items-center justify-center text-gray-600 font-bold"><i className="fa-solid fa-user-secret text-4xl"></i></div>;
+    //    function generateRoundRobin(playersObj) {
+      const uids = Object.keys(playersObj);
+      if (uids.length % 2 !== 0) uids.push('BYE'); // Prevenção de bug se o número for ímpar
       
-      let rarity = 'card-bronze';
-      if (player.overall >= 85) rarity = 'card-silver';
-      if (player.overall >= 90) rarity = 'card-gold';
-      if (player.overall >= 95) rarity = 'card-lenda';
+      const numRounds = uids.length - 1;
+      const half = uids.length / 2;
+      const schedule = [];
 
-      return (
-        <div onClick={() => onClick && onClick(player)} className={`card-3d w-40 h-56 rounded-xl ${rarity} p-3 flex flex-col justify-between`} onMouseEnter={SFX.pick}>
-          <div className="flex justify-between items-start z-10 relative">
-            <span className="font-sports font-bold text-5xl leading-none drop-shadow-md">{hidden ? '??' : player.overall}</span>
-            <span className="font-bold text-xs bg-black/60 text-white px-2 py-1 rounded shadow-inner uppercase font-sports tracking-wider">{player.pos}</span>
-          </div>
-          <div className="z-10 text-center flex-1 flex flex-col justify-end pb-1 relative">
-            <span className="font-sports font-bold text-xl leading-tight drop-shadow-md uppercase truncate">{hidden ? 'OCULTO' : player.name}</span>
-            <span className="text-[10px] font-bold opacity-90 uppercase mt-1 tracking-widest truncate">{hidden ? '---' : `${player.team} '${player.year.toString().slice(-2)}`}</span>
-          </div>
-        </div>
-      );
-    };
+      let tournamentUids = [...uids];
 
-    const MatchViewer3D = ({ match }) => {
-      const mountRef = useRef(null);
-      const [localMin, setLocalMin] = useState(0);
-      const [events, setEvents] = useState([]);
-      const [s1, setS1] = useState(0);
-      const [s2, setS2] = useState(0);
-      const [momentum, setMomentum] = useState(50);
-      const [shake, setShake] = useState(false);
-      const [flash, setFlash] = useState(false);
-
-      useEffect(() => {
-        if (!match || !match.played || !mountRef.current) return;
-        if(Date.now() - match.startTime < 1000) SFX.whistle();
-
-        const width = mountRef.current.clientWidth;
-        const height = mountRef.current.clientHeight || 250;
-
-        // THREE.JS SETUP (PBR Stadium)
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x020804);
-        scene.fog = new THREE.FogExp2(0x020804, 0.02);
-
-        const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-        camera.position.set(0, 30, 40);
-        camera.lookAt(0, 0, 0);
-
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(width, height);
-        renderer.shadowMap.enabled = true;
-        mountRef.current.innerHTML = '';
-        mountRef.current.appendChild(renderer.domElement);
-
-        // ILUMINAÇÃO
-        scene.add(new THREE.AmbientLight(0xffffff, 0.3));
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        dirLight.position.set(10, 40, 20);
-        dirLight.castShadow = true;
-        scene.add(dirLight);
-
-        // GRAMADO PROCEDURAL
-        const canvas = document.createElement('canvas');
-        canvas.width = 1024; canvas.height = 512;
-        const ctx = canvas.getContext('2d');
-        for(let i=0; i<20; i++) {
-            ctx.fillStyle = i%2===0 ? '#0f4d1e' : '#115923';
-            ctx.fillRect(i*(1024/20), 0, 1024/20, 512);
-        }
-        ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 4;
-        ctx.beginPath(); ctx.rect(20, 20, 984, 472); ctx.moveTo(512, 20); ctx.lineTo(512, 492); ctx.arc(512, 256, 70, 0, Math.PI*2); ctx.stroke();
-        
-        const texture = new THREE.CanvasTexture(canvas);
-        const fieldMat = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.8 });
-        const field = new THREE.Mesh(new THREE.PlaneGeometry(80, 40), fieldMat);
-        field.rotation.x = -Math.PI / 2; field.receiveShadow = true;
-        scene.add(field);
-
-        // BOLA NEON
-        const ball = new THREE.Mesh(new THREE.SphereGeometry(0.6, 16, 16), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x4ade80, emissiveIntensity: 0.5 }));
-        ball.castShadow = true; ball.position.y = 0.6;
-        const ballLight = new THREE.PointLight(0x4ade80, 1, 10);
-        ball.add(ballLight);
-        scene.add(ball);
-
-        // VFX PARTICLES (Object Pool)
-        const partGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
-        const partMat = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
-        const particles = new THREE.InstancedMesh(partGeo, partMat, 50);
-        const dummy = new THREE.Object3D();
-        for(let i=0; i<50; i++) { dummy.scale.set(0,0,0); dummy.updateMatrix(); particles.setMatrixAt(i, dummy.matrix); }
-        scene.add(particles);
-
-        // ENGINE LOOP
-        let animId, targetX = 0, targetZ = 0, baseShake = 0, partVel = [];
-        const msPerMin = 333; // 30s match = 90 mins virtuais
-
-        const animate = () => {
-          animId = requestAnimationFrame(animate);
-          const elapsed = Date.now() - match.startTime;
-          let min = Math.floor(elapsed / msPerMin);
-          
-          if (min <= 90) {
-            setLocalMin(min);
-            
-            const currentEvents = match.events.filter(e => e.minute <= min);
-            if (currentEvents.length !== events.length) {
-                setEvents(currentEvents.reverse());
-                const g1 = currentEvents.filter(e => e.type === 'goal' && e.teamId === match.p1.uid).length;
-                const g2 = currentEvents.filter(e => e.type === 'goal' && e.teamId === match.p2.uid).length;
-                
-                // EVENTO DE GOL (JUICINESS)
-                if (g1 > s1 || g2 > s2) { 
-                    SFX.goal(); baseShake = 2; setShake(true); setFlash(true);
-                    setTimeout(() => { setShake(false); setFlash(false); }, 500);
-                    // Ativa partículas
-                    for(let i=0; i<50; i++) {
-                      dummy.position.copy(ball.position);
-                      dummy.scale.set(1,1,1);
-                      dummy.updateMatrix();
-                      particles.setMatrixAt(i, dummy.matrix);
-                      partVel[i] = new THREE.Vector3((Math.random()-0.5)*1.5, Math.random()*2, (Math.random()-0.5)*1.5);
-                    }
-                    particles.instanceMatrix.needsUpdate = true;
-                } else {
-                    const lastEv = currentEvents[0];
-                    if(lastEv && lastEv.type === 'foul') SFX.foul();
-                    else if(lastEv && lastEv.type === 'attack') SFX.post();
-                }
-                setS1(g1); setS2(g2);
-            }
-
-            const lastMom = match.momentumData?.find(m => m.min <= min);
-            let mom = lastMom ? lastMom.val : 50;
-            if (min < 90) setMomentum(mom);
-
-            targetX = ((mom - 50) / 50) * 30; // -30 a 30 no campo
-            targetZ = Math.sin(elapsed * 0.005) * 10; 
-
-            // Física da Bola LERP
-            ball.position.x += (targetX - ball.position.x) * 0.1;
-            ball.position.z += (targetZ - ball.position.z) * 0.1;
-            ball.rotation.x += 0.1;
-
-            // Física de Partículas
-            for(let i=0; i<50; i++) {
-              if(partVel[i]) {
-                particles.getMatrixAt(i, dummy.matrix);
-                dummy.position.setFromMatrixPosition(dummy.matrix);
-                dummy.scale.setFromMatrixScale(dummy.matrix);
-                dummy.position.add(partVel[i]);
-                partVel[i].y -= 0.1; // Gravidade
-                dummy.scale.multiplyScalar(0.9); // Shrink
-                dummy.updateMatrix();
-                particles.setMatrixAt(i, dummy.matrix);
-              }
-            }
-            particles.instanceMatrix.needsUpdate = true;
-
-            // Camera Shake
-            if (baseShake > 0.01) {
-              camera.position.x = (Math.random() - 0.5) * baseShake;
-              camera.position.y = 30 + (Math.random() - 0.5) * baseShake;
-              baseShake *= 0.9; 
-            } else {
-              camera.position.x = ball.position.x * 0.2;
-              camera.position.y = 30;
-            }
-            camera.lookAt(ball.position.x * 0.5, 0, 0);
+      // Turno (19 rodadas)
+      for (let round = 0; round < numRounds; round++) {
+        const roundMatches = [];
+        for (let i = 0; i < half; i++) {
+          const p1 = tournamentUids[i];
+          const p2 = tournamentUids[uids.length - 1 - i];
+          if (p1 !== 'BYE' && p2 !== 'BYE') {
+            roundMatches.push({ p1: p1, p2: p2, s1: null, s2: null, played: false });
           }
-          renderer.render(scene, camera);
-        };
-        animate();
+        }
+        schedule.push(roundMatches);
+        tournamentUids.splice(1, 0, tournamentUids.pop());
+      }
 
-        return () => { cancelAnimationFrame(animId); if(mountRef.current) mountRef.current.innerHTML = ''; renderer.dispose(); };
-      }, [match]);
+      // Returno (inverte mandos de campo para mais 19 rodadas)
+      const returno = schedule.map(round => round.map(match => ({ p1: match.p2, p2: match.p1, s1: null, s2: null, played: false })));
+      
+      return [...schedule, ...returno]; // Total 38 Rodadas
+    }
 
-      if (!match) return null;
+    //    const ManagerDashboard = ({ roomData, user, roomId }) => {
+       const [view, setView] = useState('campanha'); // campanha, tabela
+       
+       if (!roomData || !roomData.standings || !roomData.schedule) {
+          return <div className="min-h-screen flex items-center justify-center text-[#00E676] font-black text-2xl animate-pulse">Sincronizando Tabelas da Confederação...</div>;
+       }
 
-      return (
-        <div className={`glass rounded-2xl flex flex-col h-[700px] overflow-hidden transition-all duration-100 ${shake ? 'animate-shake shadow-[0_0_80px_rgba(250,204,21,0.6)] border-yellow-500' : 'border-green-800'} ${flash ? 'animate-flash-goal' : ''}`}>
-          
-          {/* Header Placar */}
-          <div className="p-4 border-b border-white/10 bg-black/60 relative z-20">
-            <div className="font-sports text-sm tracking-widest mb-2 flex justify-center items-center gap-2 text-yellow-400">
-              {localMin === 90 ? <><i className="fa-solid fa-flag-checkered"></i> FIM DE JOGO</> : <><i className="fa-solid fa-circle text-red-500 animate-pulse"></i> AO VIVO - {localMin}' MIN</>}
-            </div>
-            <div className="flex justify-between items-center px-4">
-              <div className="flex-1 text-right font-sports font-bold text-2xl md:text-4xl truncate uppercase">{match.p1.name}</div>
-              <div className="mx-6 px-8 py-2 bg-black/80 rounded-xl border border-white/20 flex gap-4 text-5xl font-sports font-bold text-white shadow-inner">
-                <span>{s1}</span><span className="text-gray-600 text-3xl self-center font-sans">x</span><span>{s2}</span>
-              </div>
-              <div className="flex-1 text-left font-sports font-bold text-2xl md:text-4xl truncate uppercase">{match.p2.name}</div>
-            </div>
-          </div>
+       // Ordena Tabela
+       const standingsArr = Object.entries(roomData.standings).map(([uid, stats]) => ({ uid, ...stats }))
+         .sort((a,b) => b.pts - a.pts || (b.gp - b.gc) - (a.gp - a.gc) || b.gp - a.gp);
+       
+       const myStats = roomData.standings[user.uid] || {pts:0, j:0, v:0, e:0, d:0, gp:0, gc:0};
+       const myPos = standingsArr.findIndex(s => s.uid === user.uid) + 1;
+       
+       const currentRoundIndex = roomData.currentRound || 0;
+       const currentMatches = roomData.schedule[currentRoundIndex] || [];
+       const isLeagueOver = currentRoundIndex >= 38;
 
-          {/* Área 3D + Feed Ovarlay */}
-          <div className="relative flex-1 bg-black">
-             <div ref={mountRef} className="absolute inset-0 w-full h-full z-0"></div>
+       const myMatch = currentMatches.find(m => m.p1 === user.uid || m.p2 === user.uid);
+       const myNextOpponentId = myMatch ? (myMatch.p1 === user.uid ? myMatch.p2 : myMatch.p1) : null;
+       const myNextOpponentName = myNextOpponentId ? roomData.players[myNextOpponentId]?.name : '---';
+
+       // Histórico do Jogador
+       const myHistory = [];
+       roomData.schedule.forEach((round, idx) => {
+         if (idx >= currentRoundIndex) return;
+         const match = round.find(m => m.p1 === user.uid || m.p2 === user.uid);
+         if (match) {
+            const isP1 = match.p1 === user.uid;
+            const myScore = isP1 ? match.s1 : match.s2;
+            const oppScore = isP1 ? match.s2 : match.s1;
+            const result = myScore > oppScore ? 'V' : myScore < oppScore ? 'D' : 'E';
+            const oppName = roomData.players[isP1 ? match.p2 : match.p1]?.name || 'Bot';
+            myHistory.push({ round: idx + 1, oppName, myScore, oppScore, result, isHome: isP1 });
+         }
+       });
+
+       const winStreak = () => {
+         let count = 0;
+         for (let i = myHistory.length - 1; i >= 0; i--) {
+           if (myHistory[i].result === 'V') count++; else break;
+         }
+         return count;
+       };
+
+       // Lógica de Simulação de TODOS os jogos da Rodada
+       const simulateRound = async () => {
+          if (user.uid !== roomData.hostUid || isLeagueOver) return;
+
+          const roundMatches = roomData.schedule[currentRoundIndex];
+          const newStandings = JSON.parse(JSON.stringify(roomData.standings));
+          let newArtilharia = roomData.artilharia ? JSON.parse(JSON.stringify(roomData.artilharia)) : {};
+
+          const updatedMatches = roundMatches.map(match => {
+             const t1 = roomData.players[match.p1];
+             const t2 = roomData.players[match.p2];
+
+             const ovr1 = (t1?.overall || 75) + 3; // +3 Fator Casa
+             const ovr2 = (t2?.overall || 75);
              
-             {/* Momentum Bar */}
-             <div className="absolute top-0 left-0 w-full h-1.5 bg-gray-900 z-10 flex">
-                <div className="h-full bg-blue-500 transition-all duration-300" style={{width: `${100 - momentum}%`}}></div>
-                <div className="h-full bg-red-500 transition-all duration-300" style={{width: `${momentum}%`}}></div>
-             </div>
+             let s1 = 0; let s2 = 0;
+             const power1 = ovr1 / (ovr1 + ovr2);
+             
+             // 5 a 6 chances de gol no jogo
+             const chances = 5 + Math.floor(Math.random() * 2);
+             for(let i=0; i<chances; i++) {
+               if(Math.random() < 0.35) continue; // Chance errada/Goleiro defendeu
+               if(Math.random() < power1) s1++; else s2++;
+             }
 
-             {/* Live Commentary Feed */}
-             <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none z-10 flex flex-col justify-end p-4">
-               <div className="space-y-2 overflow-y-auto max-h-48 scrollbar-hide flex flex-col-reverse pointer-events-auto">
-                 {events.length === 0 && <div className="text-center text-white/50 font-sports text-xl animate-pulse">A bola vai rolar... Tensão máxima!</div>}
-                 {events.slice(0,5).map((ev, i) => {
-                   let bg = 'bg-black/60 border-green-900/50 text-gray-300 font-medium';
-                   let icon = 'fa-shoe-prints text-green-500';
-                   if(ev.type === 'goal') { bg = 'bg-yellow-500 text-black border-yellow-400 font-bold text-xl shadow-[0_0_20px_rgba(250,204,21,0.5)]'; icon = 'fa-futbol animate-bounce'; }
-                   else if(ev.type === 'foul') { bg = 'bg-red-950/90 border-red-700 text-red-100 font-bold'; icon = 'fa-square text-red-500'; }
-                   else if(ev.type === 'save') { bg = 'bg-blue-900/80 border-blue-600 text-blue-100 font-bold'; icon = 'fa-hands text-blue-400'; }
-                   else if(ev.type === 'attack') { bg = 'bg-orange-950/80 border-orange-700 text-orange-100 font-bold'; icon = 'fa-fire text-orange-500'; }
-                   else if(ev.type === 'red_card') { bg = 'bg-red-600 text-white font-black border-red-400 animate-pulse'; icon = 'fa-square text-white'; }
+             // Atualiza Classificação
+             newStandings[match.p1].j++; newStandings[match.p2].j++;
+             newStandings[match.p1].gp += s1; newStandings[match.p1].gc += s2;
+             newStandings[match.p2].gp += s2; newStandings[match.p2].gc += s1;
+             
+             if(s1 > s2) { newStandings[match.p1].pts += 3; newStandings[match.p1].v++; newStandings[match.p2].d++; }
+             else if(s2 > s1) { newStandings[match.p2].pts += 3; newStandings[match.p2].v++; newStandings[match.p1].d++; }
+             else { newStandings[match.p1].pts += 1; newStandings[match.p2].pts += 1; newStandings[match.p1].e++; newStandings[match.p2].e++; }
 
-                   return (
-                     <div key={i} className={`p-3 rounded-lg border flex gap-3 items-center animate-slide-up ${bg}`}>
-                       {ev.type !== 'info' && <span className="font-sports font-bold opacity-70 min-w-[30px] text-right text-lg">{ev.minute}'</span>}
-                       <i className={`fa-solid ${icon}`}></i>
-                       <span className="leading-tight flex-1 text-sm md:text-base">{ev.text}</span>
-                     </div>
-                   )
-                 })}
+             // Atualiza Artilharia
+             const assignGoal = (teamId, teamObj, goals) => {
+               if(!teamObj || !teamObj.team) return;
+               for(let g=0; g<goals; g++) {
+                  const scorers = teamObj.team.filter(p => p.pos === 'ATA' || p.pos === 'PON' || p.pos === 'MEI');
+                  const p = scorers.length > 0 ? scorers[Math.floor(Math.random() * scorers.length)] : teamObj.team[0];
+                  
+                  if(!newArtilharia[p.id]) newArtilharia[p.id] = { name: p.name, team: teamObj.name, goals: 0 };
+                  newArtilharia[p.id].goals += 1;
+               }
+             };
+
+             assignGoal(match.p1, t1, s1);
+             assignGoal(match.p2, t2, s2);
+
+             return { ...match, s1, s2, played: true };
+          });
+
+          const updates = {};
+          updates[`schedule/${currentRoundIndex}`] = updatedMatches;
+          updates[`standings`] = newStandings;
+          updates[`artilharia`] = newArtilharia;
+          updates[`currentRound`] = currentRoundIndex + 1;
+
+          await db.ref(`games/${APP_ID}/${roomId}`).update(updates);
+       };
+
+       const topScorers = Object.values(roomData.artilharia || {}).sort((a,b) => b.goals - a.goals).slice(0, 10);
+
+       return (
+         <div className="min-h-screen p-4 md:p-8 flex flex-col md:flex-row gap-6 max-w-[1600px] mx-auto animate-slide-up">
+            
+            {/* Esquerda: Campanha Widget */}
+            <div className="w-full md:w-[300px] flex flex-col gap-6 shrink-0">
+               <div className="manager-card p-6 flex flex-col gap-6">
+                 <h3 className="text-[#00E676] font-black text-xs tracking-widest uppercase">Sua Campanha</h3>
+                 
+                 <div className="flex justify-between items-end border-b border-white/10 pb-4">
+                   <div>
+                     <div className="text-4xl md:text-5xl font-black text-[#00E676]">{myPos}º</div>
+                     <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Posição</div>
+                   </div>
+                   <div className="text-right">
+                     <div className="text-4xl md:text-5xl font-black text-white">{myStats.pts}</div>
+                     <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Pontos</div>
+                   </div>
+                 </div>
+
+                 <div className="border-b border-white/10 pb-4">
+                   <div className="font-black text-lg">{myStats.v}V {myStats.e}E {myStats.d}D</div>
+                   <div className="text-xs text-gray-400 font-medium mt-1">GP {myStats.gp} / GC {myStats.gc} / SG {myStats.gp - myStats.gc}</div>
+                 </div>
+
+                 <div className="pb-2">
+                   <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Sequência</div>
+                   <div className="font-black text-2xl text-white">{winStreak()} vitórias</div>
+                 </div>
                </div>
-             </div>
-          </div>
-        </div>
-      );
+            </div>
+
+            {/* Centro: Painel Principal */}
+            <div className="flex-1 flex flex-col gap-6">
+               <div className="manager-card p-6 md:p-8">
+                 <h3 className="text-[#00E676] font-black text-xs tracking-widest uppercase mb-2">Brasileirão Jogo a Jogo</h3>
+                 <h1 className="text-4xl md:text-5xl font-black text-white mb-2">Campanha</h1>
+                 <p className="text-gray-400 font-medium mb-6">Rodada {Math.min(38, currentRoundIndex + 1)}/38</p>
+
+                 <div className="bg-[#0B1319] border border-white/5 rounded-xl p-4 flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
+                    <span className="font-bold text-gray-300">{myStats.v}V {myStats.e}E {myStats.d}D</span>
+                    <span className="font-bold text-gray-300 hidden md:block">GP {myStats.gp} / GC {myStats.gc}</span>
+                    <span className="font-bold text-white text-center md:text-right">Próximo Jogo:<br/><span className="text-[#00E676]">{myNextOpponentName}</span></span>
+                 </div>
+
+                 <div className="flex justify-between items-center bg-[#0B1319] border border-white/5 rounded-xl p-4">
+                    <div className="hidden md:flex flex-col gap-2">
+                       <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Controle de Tempo</span>
+                       <div className="flex gap-2">
+                         <span className="bg-[#00E676] text-black font-black text-xs px-4 py-1.5 rounded-full">Turbo</span>
+                       </div>
+                    </div>
+                    {user.uid === roomData.hostUid && !isLeagueOver ? (
+                      <button onClick={simulateRound} className="w-full md:w-auto bg-transparent border border-white/20 text-white font-bold px-8 py-3 rounded-lg hover:bg-white/10 transition flex justify-center items-center gap-2">
+                         <i className="fa-solid fa-rotate"></i> Simular Rodada
+                      </button>
+                    ) : isLeagueOver ? (
+                      <div className="text-[#00E676] font-black uppercase text-xl w-full text-center"><i className="fa-solid fa-trophy mr-2"></i> Brasileirão Encerrado</div>
+                    ) : (
+                      <div className="text-yellow-500 font-bold text-sm w-full text-center"><i className="fa-solid fa-spinner fa-spin mr-2"></i> Aguardando Host Simular...</div>
+                    )}
+                 </div>
+               </div>
+
+               {/* Abas */}
+               <div className="flex gap-4 border-b border-white/10 pb-2 px-2">
+                 <button onClick={()=>setView('campanha')} className={`font-black uppercase tracking-widest text-xs pb-2 border-b-2 transition-colors ${view==='campanha'?'text-white border-[#00E676]':'text-gray-500 border-transparent hover:text-gray-300'}`}>Meus Jogos</button>
+                 <button onClick={()=>setView('tabela')} className={`font-black uppercase tracking-widest text-xs pb-2 border-b-2 transition-colors ${view==='tabela'?'text-white border-[#00E676]':'text-gray-500 border-transparent hover:text-gray-300'}`}>Classificação</button>
+               </div>
+
+               <div className="flex-1 overflow-y-auto pr-2 space-y-4 pb-10">
+                  {view === 'campanha' && myHistory.length === 0 && <div className="text-gray-500 text-center mt-10 font-bold">Nenhuma partida jogada ainda.</div>}
+                  {view === 'campanha' && myHistory.slice().reverse().map((m, i) => {
+                     const badgeClass = m.result === 'V' ? 'badge-v' : m.result === 'E' ? 'badge-e' : 'badge-d';
+                     return (
+                        <div key={i} className="manager-card p-4 md:p-5 flex justify-between items-center group hover:border-[#00E676]/50 transition-colors">
+                           <div className="flex-1">
+                             <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">RODADA {m.round}</div>
+                             <div className="font-black text-sm md:text-lg flex flex-col md:flex-row gap-2 md:gap-3 items-start md:items-center">
+                               <span className="truncate max-w-[150px]">{m.isHome ? 'Seu Esquadrão' : m.oppName}</span>
+                               <span className="text-xl md:text-2xl text-[#00E676] font-mono bg-[#0B1319] px-3 rounded shadow-inner">{m.isHome ? m.myScore : m.oppScore} x {m.isHome ? m.oppScore : m.myScore}</span>
+                               <span className="truncate max-w-[150px]">{!m.isHome ? 'Seu Esquadrão' : m.oppName}</span>
+                             </div>
+                           </div>
+                           <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-sm md:text-lg shadow-lg shrink-0 ${badgeClass}`}>
+                             {m.result}
+                           </div>
+                        </div>
+                     );
+                  })}
+
+                  {view === 'tabela' && (
+                     <div className="manager-card p-2 md:p-4 overflow-x-auto">
+                        <table className="w-full text-left text-xs md:text-sm">
+                           <thead className="text-gray-500 text-[9px] md:text-[10px] uppercase tracking-widest border-b border-white/10">
+                              <tr><th className="pb-3 pl-2">Pos</th><th className="pb-3">Clube</th><th className="pb-3 text-center">Pts</th><th className="pb-3 text-center">J</th><th className="pb-3 text-center hidden md:table-cell">V</th><th className="pb-3 text-center hidden md:table-cell">E</th><th className="pb-3 text-center hidden md:table-cell">D</th><th className="pb-3 text-center">SG</th></tr>
+                           </thead>
+                           <tbody className="font-medium text-gray-300">
+                              {standingsArr.map((t, i) => (
+                                 <tr key={t.uid} className={`border-b border-white/5 last:border-0 hover:bg-white/5 transition ${t.uid === user.uid ? 'bg-green-900/20 text-white font-bold' : ''}`}>
+                                    <td className={`p-2 md:p-3 pl-2 font-black ${i < 4 ? 'text-blue-400' : i > 15 ? 'text-red-500' : ''}`}>{i+1}</td>
+                                    <td className="p-2 md:p-3 truncate max-w-[100px] md:max-w-[200px]">{t.uid === user.uid ? <span className="text-[#00E676]">Você <i className="fa-solid fa-star text-[10px]"></i></span> : t.name}</td>
+                                    <td className="p-2 md:p-3 text-center font-black text-white">{t.pts}</td>
+                                    <td className="p-2 md:p-3 text-center">{t.j}</td>
+                                    <td className="p-2 md:p-3 text-center hidden md:table-cell">{t.v}</td>
+                                    <td className="p-2 md:p-3 text-center hidden md:table-cell">{t.e}</td>
+                                    <td className="p-2 md:p-3 text-center hidden md:table-cell">{t.d}</td>
+                                    <td className="p-2 md:p-3 text-center">{t.gp - t.gc}</td>
+                                 </tr>
+                              ))}
+                           </tbody>
+                        </table>
+                     </div>
+                  )}
+               </div>
+            </div>
+
+            {/* Direita: Artilharia */}
+            <div className="w-full md:w-[320px] shrink-0 flex flex-col gap-4">
+               <h3 className="text-[#00E676] font-black text-xs tracking-widest uppercase pl-2">Artilharia</h3>
+               <div className="space-y-3">
+                  {topScorers.length === 0 && <div className="text-gray-500 text-sm font-bold pl-2">Nenhum gol marcado ainda.</div>}
+                  {topScorers.map((s, i) => (
+                     <div key={i} className="bg-[#00E676] rounded-xl p-3 flex justify-between items-center shadow-lg relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/20 blur-2xl rounded-full -translate-y-1/2 translate-x-1/2"></div>
+                        <div className="flex gap-3 items-center relative z-10 w-[70%]">
+                           <div className="w-6 h-6 shrink-0 bg-black/20 rounded-full flex items-center justify-center font-black text-black text-xs">{i+1}</div>
+                           <div className="truncate">
+                             <div className="font-black text-black leading-tight truncate">{s.name}</div>
+                             <div className="text-[9px] font-bold text-black/60 uppercase tracking-widest truncate">{s.team}</div>
+                           </div>
+                        </div>
+                        <div className="w-10 h-10 shrink-0 bg-[#0B1319] text-white rounded-full flex items-center justify-center font-black text-lg shadow-inner relative z-10">
+                          {s.goals}
+                        </div>
+                     </div>
+                  ))}
+               </div>
+            </div>
+         </div>
+       );
     };
 
-    function App() {
+    //    function App() {
       const [user, setUser] = useState(null);
       const [isAuthLoading, setIsAuthLoading] = useState(true);
       const [playerName, setPlayerName] = useState('');
-      const [appState, setAppState] = useState('INIT');
+      const [appState, setAppState] = useState('MENU'); 
       const [roomData, setRoomData] = useState(null);
       const [roomId, setRoomId] = useState('');
-      const [gameMode, setGameMode] = useState('knockout');
       const [error, setError] = useState('');
       
-      const [myFormation, setMyFormation] = useState('4-3-3');
-      const [draftOptions, setDraftOptions] = useState([]);
       const [myTeam, setMyTeam] = useState([]);
-      const [walkoutPlayer, setWalkoutPlayer] = useState(null);
-      const [tactic, setTactic] = useState('Equilibrado');
-      const seenIds = useRef(new Set()); 
+      const [draftOptions, setDraftOptions] = useState([]);
+      
+      // OBRIGATÓRIO: Formação Fixa para simplificar o Draft
+      const formation = ['GOL', 'LAT', 'ZAG', 'ZAG', 'LAT', 'VOL', 'MEI', 'MEI', 'PON', 'ATA', 'ATA'];
 
       useEffect(() => {
-        auth.signInAnonymously().catch(e => setError("Erro: Ative o Login Anônimo no Firebase."));
+        const init = async () => {
+          try { await auth.signInAnonymously(); } catch(e) { console.error(e); }
+        };
+        init();
         const unsub = auth.onAuthStateChanged(u => { setUser(u); setIsAuthLoading(false); });
         return () => unsub();
       }, []);
 
       useEffect(() => {
-        if(!user || !roomId || appState === 'INIT' || appState === 'MENU') return;
+        if(!user || !roomId || appState === 'MENU') return;
         const roomRef = db.ref(`games/${APP_ID}/${roomId}`);
         const listener = roomRef.on('value', snap => {
           if(snap.exists()) {
             const data = snap.val();
             setRoomData(data);
-            if(data.status === 'draft_setup' && appState === 'LOBBY') setAppState('DRAFT_SETUP');
-            if(data.status === 'drafting' && appState === 'DRAFT_SETUP') setAppState('DRAFTING');
-            if(data.status === 'tactics' && appState === 'DRAFTING') setAppState('TACTICS');
+            
+            // Máquina de Estados de Transição
+            if(data.status === 'drafting' && appState === 'LOBBY') {
+               setAppState('DRAFTING');
+               generatePacks([], data); // Inicia pacotes para quem estava no lobby
+            }
             if(data.status === 'tournament' && appState !== 'TOURNAMENT') setAppState('TOURNAMENT');
           } else {
-            setAppState('MENU'); setError('Sala encerrada.');
+            setError("Sala não encontrada ou foi encerrada.");
+            setAppState('MENU');
           }
         });
         return () => roomRef.off('value', listener);
       }, [user, roomId, appState]);
 
+      // Cria a Sala como LOBBY (Sem Bots ainda, esperando os amigos)
       const handleCreateRoom = async () => {
-        SFX.click();
-        if(!playerName || !roomId) return setError("Preencha os campos!");
+        if(!playerName || !roomId) return setError("Digite seu Nome e uma Sala.");
         const roomRef = db.ref(`games/${APP_ID}/${roomId}`);
         const snap = await roomRef.get();
-        if(snap.exists()) return setError("Sala já existe.");
-        await roomRef.set({ hostUid: user.uid, status: 'lobby', stage: 0, mode: gameMode, players: { [user.uid]: { name: playerName, team: [], overall: 0, isReady: false, tactic: 'Equilibrado' } } });
-        setAppState('LOBBY'); setError('');
+        if(snap.exists()) return setError("Esta sala já existe.");
+
+        await roomRef.set({
+          hostUid: user.uid, status: 'lobby', currentRound: 0,
+          players: { [user.uid]: { name: playerName, team: [], overall: 0, isReady: false, isBot: false } }
+        });
+        setAppState('LOBBY');
+        setError('');
       };
 
+      // Entrar em uma sala existente
       const handleJoinRoom = async () => {
-        SFX.click();
-        if(!playerName || !roomId) return setError("Preencha os campos!");
+        if(!playerName || !roomId) return setError("Digite seu Nome e a Sala.");
         const roomRef = db.ref(`games/${APP_ID}/${roomId}`);
         const snap = await roomRef.get();
         if(!snap.exists()) return setError("Sala não encontrada.");
-        if(snap.val().status !== 'lobby') return setError("Jogo em andamento.");
-        await roomRef.update({ [`players/${user.uid}`]: { name: playerName, team: [], overall: 0, isReady: false, tactic: 'Equilibrado' } });
-        setAppState('LOBBY'); setError('');
+        
+        const data = snap.val();
+        if(data.status !== 'lobby') return setError("O Draft já começou nesta sala.");
+        if(Object.keys(data.players || {}).length >= 20) return setError("Sala lotada (Máx 20).");
+
+        await roomRef.update({
+           [`players/${user.uid}`]: { name: playerName, team: [], overall: 0, isReady: false, isBot: false }
+        });
+        setAppState('LOBBY');
+        setError('');
       };
 
-      const pullPacks = (currentLength) => {
-        if (currentLength >= 11) return;
-        const reqPos = FORMATIONS[myFormation][currentLength];
-        let pool = RAW_DB.filter(p => p.pos === reqPos && !seenIds.current.has(p.baseId));
-        let options = pool.sort(() => 0.5 - Math.random()).slice(0, 3);
-        
-        let b=0; while(options.length < 3) { options.push({ id: `gen_${Date.now()}_${b}`, baseId: `gen_${Date.now()}_${b}`, name: `Talento Base`, year: 2024, team: 'Academy', overall: 75+Math.floor(Math.random()*10), pos: reqPos }); b++; }
-        options.forEach(p => seenIds.current.add(p.baseId));
-        setDraftOptions(options);
+      // HOST: Iniciar o Draft (Preenche os slots vazios com BOTS)
+      const startDraft = async () => {
+         if (user.uid !== roomData.hostUid) return;
+         
+         const currentPlayers = Object.keys(roomData.players || {});
+         const botsNeeded = 20 - currentPlayers.length; // Brasileirão tem 20 times
+         
+         const updates = {};
+         updates['status'] = 'drafting';
+         
+         for(let i=0; i<botsNeeded; i++) {
+            const teamName = CPU_TEAMS[i % CPU_TEAMS.length];
+            const botTeam = formation.map((pos, idx) => ({
+               id: `bot_${i}_${idx}`, name: `Jogador ${idx+1}`, team: teamName,
+               pos: pos, overall: 75 + Math.floor(Math.random()*12)
+            }));
+            const botOvr = Math.round(botTeam.reduce((acc, p) => acc + p.overall, 0) / 11);
+            
+            updates[`players/bot_${i}`] = {
+               name: teamName, team: botTeam, overall: botOvr, isReady: true, isBot: true
+            };
+         }
+         
+         await db.ref(`games/${APP_ID}/${roomId}`).update(updates);
+      };
+
+      // Gerador de Pacotes do Draft Local
+      const generatePacks = (currentTeam, currentRoomData) => {
+         if (currentTeam.length >= 11) return;
+         const reqPos = formation[currentTeam.length];
+         
+         let pool = RAW_DB.filter(p => p.pos === reqPos);
+         let options = pool.sort(() => 0.5 - Math.random()).slice(0, 3);
+         
+         // Fallback se faltar jogador no DB
+         while(options.length < 3) {
+            options.push({ id: `gen_${Date.now()}_${options.length}`, name: "Base", team: "Academy", year: 2024, overall: 75, pos: reqPos });
+         }
+         setDraftOptions(options);
       };
 
       const pickPlayer = async (player) => {
-        if (myTeam.length >= 11) return;
-        if (player.overall >= 93) { SFX.walkout(); setWalkoutPlayer(player); setTimeout(() => setWalkoutPlayer(null), 3000); } else { SFX.pick(); }
-        
-        const newTeam = [...myTeam, player];
-        setMyTeam(newTeam);
-        
-        if (newTeam.length < 11) {
-          pullPacks(newTeam.length);
-        } else {
-          setDraftOptions([]); 
-          const baseOvr = newTeam.reduce((acc, p) => acc + p.overall, 0) / 11;
-          const chem = newTeam.reduce((acc, p, _, arr) => acc + (arr.filter(x=>x.team===p.team).length > 1 ? 0.5 : 0), 0);
-          await db.ref(`games/${APP_ID}/${roomId}/players/${user.uid}`).update({ team: newTeam, overall: Math.min(99, Math.round(baseOvr + chem)), isReady: true });
-        }
+         const newTeam = [...myTeam, player];
+         setMyTeam(newTeam);
+         
+         if (newTeam.length < 11) {
+            generatePacks(newTeam, roomData);
+         } else {
+            setDraftOptions([]);
+            const finalOvr = Math.round(newTeam.reduce((acc, p) => acc + p.overall, 0) / 11);
+            await db.ref(`games/${APP_ID}/${roomId}/players/${user.uid}`).update({
+               team: newTeam, overall: finalOvr, isReady: true
+            });
+         }
       };
 
-      const generateTournament = async () => {
-        SFX.click();
-        const players = Object.entries(roomData?.players || {}).map(([uid, p]) => ({uid, ...p}));
-        let target = roomData?.mode === '1v1' ? 2 : 8;
-        let b=0; while(players.length < target) { players.push({ uid: `bot_${b}`, name: BOT_NAMES[b%BOT_NAMES.length], overall: 70+Math.floor(Math.random()*15), isBot: true, tactic: 'Equilibrado' }); b++; }
-        players.sort(() => 0.5 - Math.random());
-        let matches = []; for(let i=0; i<target; i+=2) matches.push({ p1: players[i], p2: players[i+1], played: false, events: [] });
-        
-        const updates = { status: 'tournament', stage: target === 8 ? 1 : target === 4 ? 2 : 3, [`bracket/${target === 8 ? 'quarters' : target === 4 ? 'semis' : 'final'}`]: matches };
-        Object.keys(roomData.players).forEach(uid => updates[`players/${uid}/isReady`] = false);
-        await db.ref(`games/${APP_ID}/${roomId}`).update(updates);
+      // HOST: Após todos draftarem, gera a Tabela e vai pro Torneio
+      const startTournament = async () => {
+         if (user.uid !== roomData.hostUid) return;
+         
+         const schedule = generateRoundRobin(roomData.players);
+         const standings = {};
+         Object.keys(roomData.players).forEach(uid => {
+            standings[uid] = { name: roomData.players[uid].name, pts: 0, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0 };
+         });
+
+         await db.ref(`games/${APP_ID}/${roomId}`).update({
+            status: 'tournament', schedule, standings, artilharia: {}
+         });
       };
 
-      const simulateMatches = async () => {
-        SFX.click();
-        const startTime = Date.now() + 1500; 
-        const stageKey = roomData?.stage === 1 ? 'quarters' : roomData?.stage === 2 ? 'semis' : 'final';
-        const matchesToSim = roomData?.bracket?.[stageKey] || [];
-
-        const simMatches = matchesToSim.map(match => {
-           let events=[], momData=[], s1=0, s2=0, currentMom=50;
-           const t1 = TACTICS[match.p1.tactic] || TACTICS['Equilibrado'], t2 = TACTICS[match.p2.tactic] || TACTICS['Equilibrado'];
-           const luck1 = (Math.random() * 20 - 10), luck2 = (Math.random() * 20 - 10); // Fator Zebra Absurdo
-           const o1 = (match.p1.overall * t1.atkMod) + luck1, o2 = (match.p2.overall * t2.atkMod) + luck2;
-           const prob1 = Math.max(0.1, Math.min(0.9, o1 / (o1 + o2)));
-
-           for(let min=1; min<=90; min++) {
-             if(min%5===0) { currentMom += (Math.random()>prob1 ? 20 : -20); currentMom = Math.max(10, Math.min(90, currentMom)); momData.push({min, val: currentMom}); }
-             
-             let actProb = (currentMom < 30 || currentMom > 70) ? 0.25 : 0.10; // Cenas tensas!
-             if(Math.random() < actProb) { 
-               const isP1 = Math.random() < (currentMom < 50 ? 0.8 : 0.2);
-               const att = isP1 ? match.p1 : match.p2, def = isP1 ? match.p2 : match.p1;
-               const roll = Math.random();
-               
-               if(roll < 0.25) { 
-                 s1 += isP1 ? 1 : 0; s2 += isP1 ? 0 : 1;
-                 const goalTxt = DIALOGS.goal[Math.floor(Math.random()*DIALOGS.goal.length)].replace('{att}', att.name);
-                 events.push({ minute: min, type: 'goal', teamId: att.uid, text: goalTxt }); currentMom = 50;
-               } else if(roll < 0.50) { events.push({ minute: min, type: 'save', teamId: def.uid, text: DIALOGS.save[Math.floor(Math.random()*DIALOGS.save.length)].replace('{def}', def.name) });
-               } else if(roll < 0.70) { events.push({ minute: min, type: 'foul', teamId: def.uid, text: DIALOGS.foul[Math.floor(Math.random()*DIALOGS.foul.length)].replace('{def}', def.name) });
-               } else if(roll < 0.75) { events.push({ minute: min, type: 'red_card', teamId: def.uid, text: DIALOGS.red_card[Math.floor(Math.random()*DIALOGS.red_card.length)].replace('{def}', def.name) });
-               } else { events.push({ minute: min, type: 'attack', teamId: att.uid, text: DIALOGS.attack[Math.floor(Math.random()*DIALOGS.attack.length)].replace('{att}', att.name) }); }
-             }
-           }
-
-           if (s1 === s2) {
-             events.push({ minute: 90, type: 'info', text: 'TENSÃO! Decisão por Pênaltis!' });
-             if(Math.random() > 0.5) { s1++; events.push({ minute: 90, type: 'goal', teamId: match.p1.uid, text: `${match.p1.name} consagra-se nas penalidades!` }); }
-             else { s2++; events.push({ minute: 90, type: 'goal', teamId: match.p2.uid, text: `${match.p2.name} consagra-se nas penalidades!` }); }
-           }
-           events.push({ minute: 90, type: 'info', text: 'FIM DE PAPO!' });
-           return { ...match, startTime, played: true, events, momentumData: momData, s1, s2, winner: s1>s2 ? match.p1 : match.p2 };
-        });
-
-        await db.ref(`games/${APP_ID}/${roomId}/bracket/${stageKey}`).set(simMatches);
-        setTimeout(async () => {
-           const nextStage = roomData?.stage === 1 ? 'semis' : roomData?.stage === 2 ? 'final' : 'campeao';
-           if (nextStage !== 'campeao') {
-             let nextMatches = []; for(let i=0; i<simMatches.length; i+=2) nextMatches.push({ p1: simMatches[i].winner, p2: simMatches[i+1].winner, played: false, events: [] });
-             await db.ref(`games/${APP_ID}/${roomId}`).update({ [`bracket/${nextStage}`]: nextMatches, stage: (roomData?.stage || 1) + 1 });
-           } else { await db.ref(`games/${APP_ID}/${roomId}`).update({ stage: 4 }); }
-        }, 33000); 
-      };
-
-      // RENDERIZADORES DE TELA (Sync Gates aplicados)
-      if (isAuthLoading) return <div className="min-h-screen flex items-center justify-center bg-black text-green-500 font-sports text-3xl animate-pulse">Iniciando Servidores...</div>;
-      if (appState === 'INIT') return <div className="min-h-screen flex items-center justify-center bg-pitch"><button onClick={()=>{SFX.init(); setAppState('MENU');}} className="glass p-16 rounded-[3rem] border-2 border-yellow-500 shadow-[0_0_80px_rgba(250,204,21,0.4)] hover:scale-105 transition"><i className="fa-solid fa-power-off text-8xl text-yellow-500 mb-6 animate-pulse"></i><h1 className="text-6xl font-sports font-bold text-yellow-400">INICIAR RESENHA</h1><p className="mt-4 text-gray-400 font-bold uppercase">Ativa Audio Engine 3D</p></button></div>;
-      
-      if (appState === 'MENU') return (
-        <div className="min-h-screen flex items-center justify-center pitch-bg p-4"><div className="glass p-10 rounded-3xl w-full max-w-md shadow-2xl border border-green-500/30"><div className="text-center mb-10"><i className="fa-solid fa-trophy text-7xl text-yellow-400 drop-shadow-[0_0_30px_rgba(250,204,21,0.6)] mb-4 animate-bounce"></i><h1 className="text-6xl font-sports font-bold text-white uppercase">DRAFT KINGS</h1><p className="text-green-400 font-bold tracking-widest uppercase mt-2">A Resenha Definitiva</p></div><div className="space-y-4"><input className="w-full p-4 bg-black/80 rounded-xl text-white outline-none border-2 border-green-900 focus:border-yellow-400 font-sports text-2xl placeholder-gray-600" placeholder="Nome do Treinador" value={playerName} onChange={e=>setPlayerName(e.target.value)} /><div className="flex gap-2"><input className="w-2/3 p-4 bg-black/80 rounded-xl text-white outline-none border-2 border-green-900 uppercase focus:border-yellow-400 font-sports text-2xl text-center placeholder-gray-600" placeholder="CÓDIGO" value={roomId} onChange={e=>setRoomId(e.target.value.toUpperCase())} /><select className="w-1/3 p-4 bg-black/80 rounded-xl text-white outline-none border-2 border-green-900 font-bold cursor-pointer" value={gameMode} onChange={e=>setGameMode(e.target.value)}><option value="knockout">COPA</option><option value="1v1">X1</option></select></div>{error && <div className="text-red-400 font-bold bg-red-950 p-3 rounded-xl border border-red-500 animate-shake">{error}</div>}<div className="pt-2"><button onClick={handleCreateRoom} className="w-full mb-3 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-sports text-2xl py-4 rounded-xl shadow-[0_0_20px_rgba(250,204,21,0.4)] hover:scale-105 transition"><i className="fa-solid fa-crown mr-2"></i> CRIAR SALA</button><button onClick={handleJoinRoom} className="w-full border-2 border-green-600 text-green-400 hover:bg-green-600 hover:text-white font-sports text-2xl py-4 rounded-xl transition"><i className="fa-solid fa-right-to-bracket mr-2"></i> ENTRAR</button></div></div></div></div>
-      );
-
-      if (!roomData) return <div className="min-h-screen flex items-center justify-center pitch-bg text-yellow-500 font-sports text-4xl animate-pulse">Sincronizando com o VAR...</div>;
-
-      const isHost = roomData.hostUid === user.uid;
-      const myPlayerStatus = roomData.players?.[user.uid];
-      const allReady = Object.values(roomData.players).every(p => p.isReady);
-
-      if (appState === 'LOBBY') return (
-        <div className="min-h-screen p-6 bg-pitch flex flex-col items-center justify-center"><div className="glass p-12 rounded-[2rem] w-full max-w-4xl border border-green-800"><div className="flex justify-between items-center border-b-2 border-green-800 pb-6 mb-8"><div><h2 className="text-5xl font-sports font-bold text-white">SALA <span className="text-yellow-400">{roomId}</span></h2><p className="text-green-400 font-bold uppercase tracking-widest mt-2">{roomData.mode === '1v1' ? 'DUELO X1' : 'COPA MATA-MATA'}</p></div><div className="bg-black/60 px-6 py-3 rounded-xl border border-green-900 font-sports text-2xl text-white">{Object.keys(roomData.players).length} / {roomData.mode==='1v1'?2:8}</div></div><div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">{Object.entries(roomData.players).map(([uid, p]) => (<div key={uid} className="bg-black/40 p-6 rounded-2xl border border-green-700 flex flex-col items-center gap-4"><i className={`fa-solid ${uid===roomData.hostUid?'fa-crown text-yellow-400':'fa-user text-green-400'} text-4xl`}></i><span className="font-sports text-xl truncate">{p.name}</span></div>))}</div><div className="text-center">{isHost ? <button onClick={()=>db.ref(`games/${APP_ID}/${roomId}`).update({status:'draft_setup'})} className="bg-yellow-500 text-black font-sports text-3xl px-12 py-5 rounded-xl shadow-[0_0_30px_rgba(250,204,21,0.5)] hover:scale-105 transition w-full">IR PARA A PRANCHETA</button> : <div className="text-yellow-400 font-sports text-2xl animate-pulse">Aguardando o Host...</div>}</div></div></div>
-      );
-
-      if (appState === 'DRAFT_SETUP') return (
-        <div className="min-h-screen pitch-bg flex flex-col items-center justify-center p-6"><div className="glass p-12 rounded-[2rem] w-full max-w-2xl text-center border border-green-600"><i className="fa-solid fa-clipboard-list text-7xl text-green-400 mb-6 drop-shadow-[0_0_15px_rgba(74,222,128,0.5)]"></i><h1 className="text-5xl font-sports font-bold mb-8">ESQUEMA TÁTICO</h1><div className="grid grid-cols-2 gap-4 mb-10">{Object.keys(FORMATIONS).map(form => (<button key={form} onClick={()=>{SFX.click(); setMyFormation(form);}} className={`py-6 rounded-2xl font-sports text-4xl border-4 transition ${myFormation === form ? 'bg-green-700 border-green-400 shadow-[0_0_20px_rgba(74,222,128,0.6)]' : 'bg-black/60 border-green-900 text-gray-500 hover:border-green-500 hover:text-white'}`}>{form}</button>))}</div><button onClick={()=>{SFX.click(); setAppState('DRAFTING'); pullPacks(0);}} className="w-full bg-yellow-500 text-black font-sports text-3xl py-5 rounded-xl shadow-[0_0_20px_rgba(250,204,21,0.4)] hover:bg-yellow-400 transition">ABRIR PACOTES</button></div></div>
-      );
-
-      if (appState === 'DRAFTING') {
-        const reqPos = FORMATIONS[myFormation][myTeam.length] || '---';
+      // RENDERS
+      if (appState === 'MENU') {
         return (
-          <div className="min-h-screen pitch-bg flex flex-col lg:flex-row font-sans">
-             {walkoutPlayer && <div className="fixed inset-0 z-50 bg-black/95 flex flex-col items-center justify-center animate-walkout"><PlayerCard player={walkoutPlayer} /><h1 className="text-yellow-400 font-sports text-6xl mt-8 animate-pulse tracking-widest">LENDA!</h1></div>}
-             <div className="w-full lg:w-[350px] bg-black/80 border-r-2 border-green-800 p-6 flex flex-col z-20 shadow-2xl"><h2 className="text-3xl font-sports font-bold mb-6 flex justify-between border-b-2 border-green-800 pb-4 text-white"><span className="text-yellow-400">ESQUADRÃO</span><span className="bg-green-900 px-3 rounded text-green-300">{myFormation}</span></h2><div className="flex-1 overflow-y-auto space-y-2">{FORMATIONS[myFormation].map((pos, i) => { const p=myTeam[i]; const act = i===myTeam.length && myTeam.length<11; return (<div key={i} className={`flex items-center p-3 rounded-lg border-2 ${act ? 'border-yellow-400 bg-green-800 shadow-[0_0_15px_rgba(250,204,21,0.4)] scale-105 z-10' : p ? 'border-green-600 bg-green-900/50' : 'border-green-900/30 border-dashed bg-black/40'}`}><span className={`w-12 text-center font-sports text-xl rounded ${act?'bg-yellow-500 text-black':p?'bg-black/60 text-green-400':'text-gray-600'}`}>{pos}</span><span className={`ml-4 font-bold truncate ${p?'text-white':'text-gray-600'}`}>{p?p.name:'Aguardando...'}</span></div>) })}</div></div>
-             <div className="flex-1 flex items-center justify-center p-6 relative">
-                {myTeam.length < 11 ? (
-                  <div className="text-center w-full max-w-4xl animate-slide-up"><span className="bg-yellow-500 text-black font-sports text-xl px-6 py-1 rounded-full shadow-[0_0_15px_rgba(250,204,21,0.5)]">PICK {myTeam.length + 1}/11</span><h1 className="text-6xl font-sports font-bold mt-6 mb-12 text-white">PROCURANDO <span className="text-green-400 underline decoration-yellow-500">{reqPos}</span></h1><div className="flex justify-center gap-8 perspective-1000">{draftOptions.map(p => <PlayerCard key={p.id} player={p} onClick={pickPlayer} />)}</div></div>
-                ) : (
-                  <div className="glass p-16 rounded-[3rem] border border-green-500 text-center animate-slide-up max-w-2xl"><i className="fa-solid fa-check-double text-8xl text-green-400 mb-6 drop-shadow-[0_0_30px_rgba(74,222,128,0.6)]"></i><h2 className="text-5xl font-sports font-bold text-white mb-4">DRAFT FINALIZADO!</h2><p className="text-2xl text-gray-300 font-medium mb-8">OVR Final (c/ Entrosamento): <span className="text-yellow-400 font-black text-6xl block mt-2">{myPlayerStatus?.overall||'--'}</span></p><div className="bg-black/50 p-6 rounded-xl border border-white/10 mb-8">{Object.entries(roomData.players).map(([uid, p]) => (<div key={uid} className="flex justify-between items-center py-2 border-b border-white/5 last:border-0 font-bold"><span className="text-gray-300">{p.name}</span>{p.isReady ? <span className="text-green-400">Pronto</span> : <span className="text-yellow-500 animate-pulse">Draftando...</span>}</div>))}</div>{isHost && allReady ? <button onClick={()=>db.ref(`games/${APP_ID}/${roomId}`).update({status:'tactics'})} className="w-full bg-yellow-500 text-black font-sports text-3xl py-5 rounded-xl shadow-[0_0_30px_rgba(250,204,21,0.5)] hover:scale-105 transition">DEFINIR POSTURA TÁTICA</button> : isHost ? <div className="text-gray-500 font-bold">Aguardando os outros...</div> : <div className="text-yellow-400 font-sports text-2xl animate-pulse">Aguardando o Host...</div>}</div>
-                )}
-             </div>
-          </div>
-        )
-      }
-
-      if (appState === 'TACTICS') return (
-        <div className="min-h-screen pitch-bg flex flex-col items-center justify-center p-6"><div className="glass p-12 rounded-[2rem] w-full max-w-4xl text-center shadow-2xl border border-blue-600"><i className="fa-solid fa-chess-knight text-8xl text-blue-400 mb-6 drop-shadow-[0_0_20px_rgba(59,130,246,0.6)]"></i><h1 className="text-6xl font-sports font-bold mb-10 text-white">POSTURA TÁTICA</h1><div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">{Object.entries(TACTICS).map(([n, d]) => (<div key={n} onClick={()=>{SFX.click(); setTactic(n);}} className={`p-8 rounded-2xl cursor-pointer border-4 transition-all ${tactic===n?'bg-blue-900 border-blue-400 shadow-[0_0_30px_rgba(59,130,246,0.6)] scale-105':'bg-black/60 border-blue-950 text-gray-500 hover:border-blue-500 hover:text-white'}`}><h3 className="font-sports text-4xl mb-4">{n}</h3><p className="font-bold text-sm opacity-80 leading-tight">{d.desc}</p></div>))}</div>{!myPlayerStatus?.isReady ? <button onClick={confirmTactic} className="w-full bg-blue-500 text-white font-sports text-3xl py-5 rounded-xl shadow-[0_0_30px_rgba(59,130,246,0.5)] hover:bg-blue-400 transition">TRAVAR MENTALIDADE</button> : isHost && allReady ? <button onClick={generateTournament} className="w-full bg-yellow-500 text-black font-sports text-3xl py-5 rounded-xl shadow-[0_0_30px_rgba(250,204,21,0.5)] hover:scale-105 transition">INICIAR PARTIDA</button> : <div className="text-yellow-400 font-sports text-2xl animate-pulse">Aguardando definição dos técnicos...</div>}</div></div>
-      );
-
-      if (appState === 'TOURNAMENT') {
-        const stKey = roomData.stage === 1 ? 'quarters' : roomData.stage === 2 ? 'semis' : 'final';
-        const matches = roomData.bracket?.[stKey] || [];
-        const myMatch = matches.find(m => m.p1.uid === user.uid || m.p2.uid === user.uid);
-
-        return (
-          <div className="min-h-screen bg-[#010602] p-4 md:p-8 relative">
-            <div className="max-w-7xl mx-auto">
-              <div className="flex justify-between items-center mb-6 glass p-6 rounded-2xl border border-green-800/50">
-                <div><h1 className="text-4xl font-sports font-bold text-yellow-400 uppercase"><i className="fa-solid fa-trophy mr-3"></i>{roomData.mode === '1v1'?'Duelo X1':'Copa Resenha'}</h1><p className="text-green-500 font-bold uppercase tracking-widest mt-1">Fase: {stKey}</p></div>
-                {isHost && roomData.stage < 4 && !matches[0]?.played && <button onClick={simulateMatches} className="bg-red-600 hover:bg-red-500 text-white font-sports text-2xl py-3 px-8 rounded-xl shadow-[0_0_30px_rgba(220,38,38,0.5)] transition hover:scale-105">SIMULAR RODADA</button>}
-                {!isHost && roomData.stage < 4 && !matches[0]?.played && <div className="text-yellow-400 font-sports text-xl animate-pulse">Aguardando Juiz...</div>}
-              </div>
-
-              {roomData.stage === 4 ? (
-                <div className="text-center mt-32"><i className="fa-solid fa-crown text-[150px] text-yellow-400 drop-shadow-[0_0_60px_rgba(250,204,21,0.8)] animate-bounce"></i><h1 className="text-7xl font-sports font-bold text-white mt-8 uppercase">{roomData.bracket.final[0].winner.name} CAMPEÃO!</h1></div>
-              ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                  <div className="lg:col-span-3">{myMatch ? <MatchViewer3D match={myMatch}/> : matches[0] ? <MatchViewer3D match={matches[0]}/> : null}</div>
-                  <div className="flex flex-col gap-4">
-                    <h3 className="bg-green-900/50 p-4 rounded-xl border border-green-800 text-center font-sports text-2xl text-green-400">PLACAR GERAL</h3>
-                    <div className="space-y-4">
-                      {matches.map((m, i) => {
-                         const over = m.played && (Date.now() - m.startTime > 30000);
-                         return (
-                          <div key={i} className="glass p-4 rounded-xl border border-green-800/50 shadow-lg relative overflow-hidden">
-                            <div className="flex justify-between items-center mb-3 border-b border-white/5 pb-2"><span className={`font-bold text-sm truncate ${over&&m.winner.uid===m.p1.uid?'text-yellow-400':'text-gray-300'}`}>{m.p1.name}</span><span className="font-sports text-2xl bg-black/60 px-3 rounded">{over?m.s1:'-'}</span></div>
-                            <div className="flex justify-between items-center"><span className={`font-bold text-sm truncate ${over&&m.winner.uid===m.p2.uid?'text-yellow-400':'text-gray-300'}`}>{m.p2.name}</span><span className="font-sports text-2xl bg-black/60 px-3 rounded">{over?m.s2:'-'}</span></div>
-                          </div>
-                         )
-                      })}
-                    </div>
-                  </div>
+          <div className="min-h-screen flex items-center justify-center p-4">
+             <div className="manager-card p-10 w-full max-w-md animate-slide-up text-center border-t-4 border-[#00E676]">
+                <h1 className="text-4xl font-black text-white tracking-tight mb-2">DRAFT KINGS</h1>
+                <p className="text-[#00E676] font-bold text-xs tracking-widest uppercase mb-8">Brasileirão Manager (Online)</p>
+                
+                <div className="space-y-4">
+                  <input className="w-full p-4 bg-[#0B1319] rounded-xl text-white outline-none border border-white/10 focus:border-[#00E676] font-bold transition" placeholder="Nome do Treinador" value={playerName} onChange={e=>setPlayerName(e.target.value)} />
+                  <input className="w-full p-4 bg-[#0B1319] rounded-xl text-white outline-none border border-white/10 focus:border-[#00E676] font-black uppercase text-center transition" placeholder="SALA (Ex: BRASIL)" value={roomId} onChange={e=>setRoomId(e.target.value.toUpperCase())} />
+                  
+                  {error && <div className="text-red-400 text-sm font-bold bg-red-900/30 p-2 rounded">{error}</div>}
+                  
+                  <button onClick={handleCreateRoom} className="w-full bg-[#00E676] text-black font-black py-4 rounded-xl hover:scale-[1.02] transition">CRIAR LIGA (HOST)</button>
+                  <button onClick={handleJoinRoom} className="w-full bg-transparent border border-[#00E676] text-[#00E676] font-black py-4 rounded-xl hover:bg-[#00E676]/10 transition">ENTRAR NA LIGA</button>
                 </div>
-              )}
-            </div>
+             </div>
           </div>
         );
       }
+
+      // Sync Gate de Segurança
+      if (!roomData) return <div className="min-h-screen flex items-center justify-center text-[#00E676] font-black animate-pulse">Sincronizando Rede...</div>;
+
+      const isHost = roomData.hostUid === user.uid;
+      const allReady = Object.values(roomData.players || {}).every(p => p.isReady);
+
+      if (appState === 'LOBBY') {
+        return (
+          <div className="min-h-screen flex flex-col items-center justify-center p-4">
+             <div className="manager-card p-10 text-center max-w-lg w-full animate-slide-up">
+                <h2 className="text-3xl font-black mb-2 text-white">Sala de Espera</h2>
+                <p className="text-[#00E676] font-mono mb-8 text-xl">SALA: {roomId}</p>
+                
+                <div className="bg-[#0B1319] p-4 rounded-xl border border-white/5 mb-8">
+                   <h3 className="text-xs text-gray-400 uppercase tracking-widest mb-3">Treinadores Conectados</h3>
+                   {Object.entries(roomData.players).map(([uid, p]) => (
+                     <div key={uid} className="text-white font-bold py-2 border-b border-white/5 last:border-0">{p.name} {uid === user.uid && <span className="text-[#00E676]">(Você)</span>}</div>
+                   ))}
+                </div>
+
+                {isHost ? (
+                  <button onClick={startDraft} className="w-full bg-[#00E676] text-black font-black py-4 rounded-xl hover:bg-green-400 transition shadow-lg">INICIAR DRAFT (COMPLETAR C/ BOTS)</button>
+                ) : (
+                  <div className="text-yellow-500 font-bold animate-pulse">Aguardando Host iniciar o Draft...</div>
+                )}
+             </div>
+          </div>
+        );
+      }
+
+      if (appState === 'DRAFTING') {
+         const reqPos = formation[myTeam.length];
+         return (
+           <div className="min-h-screen flex flex-col items-center p-8">
+             {myTeam.length < 11 ? (
+               <div className="text-center w-full max-w-3xl animate-slide-up">
+                 <h1 className="text-3xl font-black mb-2">Sua vez! Escolha seu {reqPos}</h1>
+                 <p className="text-[#00E676] font-bold text-xs uppercase tracking-widest mb-10">Jogador {myTeam.length + 1} de 11</p>
+                 
+                 <div className="flex flex-wrap justify-center gap-6">
+                   {draftOptions.map(p => (
+                     <div key={p.id} onClick={() => pickPlayer(p)} className="manager-card w-48 p-4 cursor-pointer hover:border-[#00E676] hover:-translate-y-2 transition-all flex flex-col items-center text-center">
+                       <div className="font-black text-4xl text-[#00E676] mb-2">{p.overall}</div>
+                       <div className="font-black text-lg text-white leading-tight mb-1">{p.name}</div>
+                       <div className="text-[10px] bg-black/50 px-2 py-1 rounded font-bold uppercase tracking-widest">{p.pos}</div>
+                       <div className="text-xs text-gray-500 mt-2">{p.team}</div>
+                     </div>
+                   ))}
+                 </div>
+               </div>
+             ) : (
+               <div className="manager-card p-10 text-center max-w-md w-full animate-slide-up">
+                 <i className="fa-solid fa-check-circle text-6xl text-[#00E676] mb-6"></i>
+                 <h2 className="text-2xl font-black text-white mb-2">Esquadrão Fechado!</h2>
+                 <p className="text-gray-400 mb-8 font-bold">Aguardando os outros treinadores terminarem...</p>
+                 
+                 {isHost && allReady && (
+                   <button onClick={startTournament} className="w-full bg-[#00E676] text-black font-black py-4 rounded-xl shadow-lg hover:scale-105 transition">GERAR TABELA DO BRASILEIRÃO</button>
+                 )}
+               </div>
+             )}
+           </div>
+         )
+      }
+
+      if (appState === 'TOURNAMENT') {
+         return <ManagerDashboard roomData={roomData} user={user} roomId={roomId} />;
+      }
+
       return null;
     }
 
