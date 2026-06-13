@@ -3,14 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Brasfoot Draft Kings: Online Edition</title>
+  <title>Brasfoot Draft Kings: Manager Edition</title>
 
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- FontAwesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- React & ReactDOM -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- Babel -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
+  <!-- Firebase Compat (RTDB) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
@@ -20,58 +28,38 @@
       theme: {
         extend: {
           colors: { 
-            bgBase: '#070C10',       // Fundo muito escuro
-            cardDark: '#0D171F',     // Cor dos cards
-            cardLighter: '#13212C',  // Hover dos cards
-            brandGreen: '#00E676',   // Verde neon principal
-            brandGreenDark: '#00B25A'
+            bgBase: '#0B1319',       // Fundo azul marinho escuro
+            cardDark: '#15202B',     // Fundo dos painéis
+            brandGreen: '#00E676',   // Verde vibrante
           },
-          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] }
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+          animation: {
+            'slide-up': 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+            'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+          },
+          keyframes: {
+            slideUp: { '0%': { opacity: 0, transform: 'translateY(20px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } }
+          }
         }
       }
     }
   </script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap');
-    body { background-color: #070C10; color: #E1E8ED; font-family: 'Inter', sans-serif; overflow-x: hidden; user-select: none; }
-    .glass-panel { background: #0D171F; border: 1px solid rgba(255,255,255,0.03); border-radius: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-    
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
+    body { background-color: #0B1319; color: #E1E8ED; font-family: 'Inter', sans-serif; overflow-x: hidden; user-select: none; }
     ::-webkit-scrollbar { width: 6px; } 
-    ::-webkit-scrollbar-track { background: #070C10; } 
-    ::-webkit-scrollbar-thumb { background: #13212C; border-radius: 10px; }
-    
-    .animate-slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    ::-webkit-scrollbar-track { background: #0B1319; } 
+    ::-webkit-scrollbar-thumb { background: #15202B; border-radius: 10px; }
   </style>
 </head>
 <body>
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useRef, useMemo } = React;
+    const { useState, useEffect, useRef } = React;
 
-    //    class ErrorBoundary extends React.Component {
-      constructor(props) { super(props); this.state = { hasError: false, error: null }; }
-      static getDerivedStateFromError(error) { return { hasError: true, error }; }
-      render() {
-        if (this.state.hasError) {
-          return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-red-950 text-white p-8 text-center">
-              <i className="fa-solid fa-triangle-exclamation text-7xl text-red-500 mb-6"></i>
-              <h1 className="text-4xl font-black mb-4 uppercase">Pane no Sistema</h1>
-              <p className="text-xl text-red-300 mb-8">Interceptamos um erro fatal. A engine foi salva da tela preta.</p>
-              <div className="bg-black/50 p-4 rounded-xl border border-red-500/30 text-xs font-mono max-w-2xl overflow-auto text-left mb-8 text-red-400">
-                {this.state.error?.toString()}
-              </div>
-              <button onClick={() => window.location.reload()} className="bg-red-600 hover:bg-red-500 px-8 py-4 rounded-xl font-bold transition">REINICIAR ENGINE</button>
-            </div>
-          );
-        }
-        return this.props.children; 
-      }
-    }
-
-    //    firebase.initializeApp({
+    // Firebase Init
+    firebase.initializeApp({
       apiKey: "AIzaSyBhFf89G1chtLnX73oNujjJTtuMMcqnQWQ",
       authDomain: "game-resenha.firebaseapp.com",
       projectId: "game-resenha",
@@ -81,60 +69,62 @@
     });
     const auth = firebase.auth();
     const db = firebase.database();
-    const APP_ID = 'brasfoot-manager-v5'; // Chave renovada para evitar cache corrompido
+    const APP_ID = 'manager-goty-v1';
 
-    // Banco de Dados super comprimido para não estourar o limite de linhas do bot
-    const RAW_DB = `
-      pele|Pelé|1970|Santos|99|ATA
-      zico|Zico|1981|Flamengo|98|MEI
-      romario|Romário|2000|Vasco|97|ATA
-      ronaldo|Ronaldo|1996|Cruzeiro|97|ATA
-      neymar|Neymar Jr|2011|Santos|96|PON
-      rcarlos|Roberto Carlos|2010|Corinthians|93|LAT
-      cafu|Cafu|1993|São Paulo|94|LAT
-      ceni|Rogério Ceni|2005|São Paulo|94|GOL
-      dida|Dida|1999|Corinthians|94|GOL
-      taffarel|Taffarel|1998|Atlético-MG|93|GOL
-      marcos|São Marcos|1999|Palmeiras|94|GOL
-      cassio|Cássio|2012|Corinthians|92|GOL
-      gamarra|Gamarra|1998|Corinthians|94|ZAG
-      aldair|Aldair|1995|Roma|93|ZAG
-      lugano|Lugano|2005|São Paulo|92|ZAG
-      gomez|Gustavo Gómez|2020|Palmeiras|91|ZAG
-      tsilva|Thiago Silva|2008|Fluminense|92|ZAG
-      msilva|Mauro Silva|1994|Bragantino|93|VOL
-      dunga|Dunga|1999|Inter|91|VOL
-      vampeta|Vampeta|1999|Corinthians|90|VOL
-      rincon|Rincón|1999|Corinthians|91|VOL
-      kaka|Kaká|2002|São Paulo|92|MEI
-      alex|Alex|2003|Cruzeiro|95|MEI
-      r10|Ronaldinho|2011|Flamengo|93|MEI
-      arrasca|Arrascaeta|2019|Flamengo|92|MEI
-      edmundo|Edmundo|1997|Vasco|96|ATA
-      adriano|Adriano Imp.|2009|Flamengo|93|ATA
-      bh|Bruno Henrique|2019|Flamengo|92|PON
-      gabigol|Gabigol|2019|Flamengo|92|ATA
-      dudu|Dudu|2018|Palmeiras|90|PON
-      hulk|Hulk|2021|Atlético-MG|91|ATA
-      paulinho|Paulinho|2012|Corinthians|91|VOL
-      ganso|PH Ganso|2010|Santos|91|MEI
-      fernandao|Fernandão|2006|Inter|90|ATA
-      fred|Fred|2012|Fluminense|91|ATA
-      marcelo|Marcelo|2023|Fluminense|88|LAT
-      dede|Dedé|2013|Cruzeiro|90|ZAG
-      miranda|Miranda|2008|São Paulo|91|ZAG
-      apodi|Apodi|2015|Chapecoense|78|LAT
-      ribamar|Ribamar|2019|Vasco|72|ATA
-      soteldo|Soteldo|2019|Santos|85|PON
-      tuliom|Túlio Maravilha|1995|Botafogo|92|ATA
-      euller|Euller|1999|Palmeiras|86|PON
-      juninho|Juninho Pernambucano|1998|Vasco|91|MEI
-      amoroso|Amoroso|1994|Guarani|89|ATA
-      luizao|Luizão|1998|Vasco|89|ATA
-    `.trim().split('\n').map(line => {
-      const [baseId, name, year, team, overall, pos] = line.trim().split('|');
-      return { id: baseId + '_' + year, baseId, name, year: parseInt(year), team, overall: parseInt(overall), pos };
-    });
+    // Banco de Dados Limpo (Objetos Nativos)
+    const RAW_DB = [
+      { id: 'pele_70', name: 'Pelé', year: 1970, team: 'Santos', overall: 99, pos: 'ATA' },
+      { id: 'zico_81', name: 'Zico', year: 1981, team: 'Flamengo', overall: 98, pos: 'MEI' },
+      { id: 'romario_00', name: 'Romário', year: 2000, team: 'Vasco', overall: 97, pos: 'ATA' },
+      { id: 'ronaldo_96', name: 'Ronaldo', year: 1996, team: 'Cruzeiro', overall: 97, pos: 'ATA' },
+      { id: 'neymar_11', name: 'Neymar Jr', year: 2011, team: 'Santos', overall: 96, pos: 'PON' },
+      { id: 'rcarlos_10', name: 'Roberto Carlos', year: 2010, team: 'Corinthians', overall: 93, pos: 'LAT' },
+      { id: 'cafu_93', name: 'Cafu', year: 1993, team: 'São Paulo', overall: 94, pos: 'LAT' },
+      { id: 'ceni_05', name: 'Rogério Ceni', year: 2005, team: 'São Paulo', overall: 94, pos: 'GOL' },
+      { id: 'dida_99', name: 'Dida', year: 1999, team: 'Corinthians', overall: 94, pos: 'GOL' },
+      { id: 'taffarel_98', name: 'Taffarel', year: 1998, team: 'Atlético-MG', overall: 93, pos: 'GOL' },
+      { id: 'marcos_99', name: 'São Marcos', year: 1999, team: 'Palmeiras', overall: 94, pos: 'GOL' },
+      { id: 'cassio_12', name: 'Cássio', year: 2012, team: 'Corinthians', overall: 92, pos: 'GOL' },
+      { id: 'gamarra_98', name: 'Gamarra', year: 1998, team: 'Corinthians', overall: 94, pos: 'ZAG' },
+      { id: 'aldair_95', name: 'Aldair', year: 1995, team: 'Roma', overall: 93, pos: 'ZAG' },
+      { id: 'lugano_05', name: 'Lugano', year: 2005, team: 'São Paulo', overall: 92, pos: 'ZAG' },
+      { id: 'gomez_20', name: 'Gustavo Gómez', year: 2020, team: 'Palmeiras', overall: 91, pos: 'ZAG' },
+      { id: 'tsilva_08', name: 'Thiago Silva', year: 2008, team: 'Fluminense', overall: 92, pos: 'ZAG' },
+      { id: 'msilva_94', name: 'Mauro Silva', year: 1994, team: 'Bragantino', overall: 93, pos: 'VOL' },
+      { id: 'dunga_99', name: 'Dunga', year: 1999, team: 'Inter', overall: 91, pos: 'VOL' },
+      { id: 'vampeta_99', name: 'Vampeta', year: 1999, team: 'Corinthians', overall: 90, pos: 'VOL' },
+      { id: 'rincon_99', name: 'Rincón', year: 1999, team: 'Corinthians', overall: 91, pos: 'VOL' },
+      { id: 'kaka_02', name: 'Kaká', year: 2002, team: 'São Paulo', overall: 92, pos: 'MEI' },
+      { id: 'alex_03', name: 'Alex', year: 2003, team: 'Cruzeiro', overall: 95, pos: 'MEI' },
+      { id: 'r10_11', name: 'Ronaldinho', year: 2011, team: 'Flamengo', overall: 93, pos: 'MEI' },
+      { id: 'arrasca_19', name: 'Arrascaeta', year: 2019, team: 'Flamengo', overall: 92, pos: 'MEI' },
+      { id: 'edmundo_97', name: 'Edmundo', year: 1997, team: 'Vasco', overall: 96, pos: 'ATA' },
+      { id: 'adriano_09', name: 'Adriano Imp.', year: 2009, team: 'Flamengo', overall: 93, pos: 'ATA' },
+      { id: 'bh_19', name: 'Bruno Henrique', year: 2019, team: 'Flamengo', overall: 92, pos: 'PON' },
+      { id: 'gabigol_19', name: 'Gabigol', year: 2019, team: 'Flamengo', overall: 92, pos: 'ATA' },
+      { id: 'dudu_18', name: 'Dudu', year: 2018, team: 'Palmeiras', overall: 90, pos: 'PON' },
+      { id: 'hulk_21', name: 'Hulk', year: 2021, team: 'Atlético-MG', overall: 91, pos: 'ATA' },
+      { id: 'paulinho_12', name: 'Paulinho', year: 2012, team: 'Corinthians', overall: 91, pos: 'VOL' },
+      { id: 'ganso_10', name: 'PH Ganso', year: 2010, team: 'Santos', overall: 91, pos: 'MEI' },
+      { id: 'fernandao_06', name: 'Fernandão', year: 2006, team: 'Inter', overall: 90, pos: 'ATA' },
+      { id: 'fred_12', name: 'Fred', year: 2012, team: 'Fluminense', overall: 91, pos: 'ATA' },
+      { id: 'marcelo_23', name: 'Marcelo', year: 2023, team: 'Fluminense', overall: 88, pos: 'LAT' },
+      { id: 'dede_13', name: 'Dedé', year: 2013, team: 'Cruzeiro', overall: 90, pos: 'ZAG' },
+      { id: 'miranda_08', name: 'Miranda', year: 2008, team: 'São Paulo', overall: 91, pos: 'ZAG' },
+      { id: 'apodi_15', name: 'Apodi', year: 2015, team: 'Chapecoense', overall: 78, pos: 'LAT' },
+      { id: 'ribamar_19', name: 'Ribamar', year: 2019, team: 'Vasco', overall: 72, pos: 'ATA' },
+      { id: 'soteldo_19', name: 'Soteldo', year: 2019, team: 'Santos', overall: 85, pos: 'PON' },
+      { id: 'tuliom_95', name: 'Túlio Maravilha', year: 1995, team: 'Botafogo', overall: 92, pos: 'ATA' },
+      { id: 'euller_99', name: 'Euller', year: 1999, team: 'Palmeiras', overall: 86, pos: 'PON' },
+      { id: 'juninho_98', name: 'Juninho Pernambucano', year: 1998, team: 'Vasco', overall: 91, pos: 'MEI' },
+      { id: 'amoroso_94', name: 'Amoroso', year: 1994, team: 'Guarani', overall: 89, pos: 'ATA' },
+      { id: 'luizao_98', name: 'Luizão', year: 1998, team: 'Vasco', overall: 89, pos: 'ATA' }
+    ];
+
+    const FORMATIONS = {
+      '4-3-3': ['GOL', 'LAT', 'ZAG', 'ZAG', 'LAT', 'VOL', 'MEI', 'MEI', 'PON', 'ATA', 'PON'],
+      '4-4-2': ['GOL', 'LAT', 'ZAG', 'ZAG', 'LAT', 'VOL', 'VOL', 'MEI', 'MEI', 'ATA', 'ATA']
+    };
 
     const CPU_TEAMS = [
       "Palmeiras 1999", "São Paulo 2005", "Flamengo 2019", "Corinthians 2012", 
@@ -144,21 +134,40 @@
       "Bahia 1988", "Goiás 2005", "São Caetano 2002", "Paysandu 2002"
     ];
 
-    const FORMATIONS = {
-      '4-3-3': ['GOL', 'LAT', 'ZAG', 'ZAG', 'LAT', 'VOL', 'MEI', 'MEI', 'PON', 'ATA', 'PON'],
-      '4-4-2': ['GOL', 'LAT', 'ZAG', 'ZAG', 'LAT', 'VOL', 'VOL', 'MEI', 'MEI', 'ATA', 'ATA'],
-      '3-5-2': ['GOL', 'ZAG', 'ZAG', 'ZAG', 'VOL', 'VOL', 'LAT', 'LAT', 'MEI', 'ATA', 'ATA']
-    };
+    class ErrorBoundary extends React.Component {
+      constructor(props) { super(props); this.state = { hasError: false, error: null, errorInfo: null }; }
+      static getDerivedStateFromError(error) { return { hasError: true, error }; }
+      componentDidCatch(error, errorInfo) { 
+        console.error("CRASH PREVENTED:", error, errorInfo); 
+        this.setState({ errorInfo });
+      }
+      render() {
+        if (this.state.hasError) {
+          return (
+            <div className="min-h-screen bg-bgBase text-white flex flex-col items-center justify-center p-8 font-sans">
+              <i className="fa-solid fa-triangle-exclamation text-6xl text-red-500 mb-6"></i>
+              <h1 className="text-4xl font-black mb-4">CRITICAL SYSTEM FAILURE</h1>
+              <p className="text-gray-400 mb-6 max-w-lg text-center">A engine colidiu com um estado inválido. A tela preta foi evitada.</p>
+              <div className="bg-cardDark p-6 rounded-xl border border-red-900/50 w-full max-w-3xl overflow-auto text-xs font-mono text-red-400">
+                {this.state.error && this.state.error.toString()}<br/><br/>
+                {this.state.errorInfo && this.state.errorInfo.componentStack}
+              </div>
+              <button onClick={() => window.location.reload()} className="mt-8 bg-brandGreen text-bgBase font-black px-8 py-4 rounded-xl hover:scale-105 transition">REINICIAR ENGINE</button>
+            </div>
+          );
+        }
+        return this.props.children; 
+      }
+    }
 
-    //    function generateBrasileiraoSchedule(playersObj) {
+    function generateSchedule(playersObj) {
       let uids = Object.keys(playersObj);
-      // Se por algum acaso for ímpar, adiciona um dummy pra não quebrar a matemática
-      if (uids.length % 2 !== 0) uids.push('BYE'); 
+      if (uids.length % 2 !== 0) uids.push('BYE');
       
-      const numRounds = uids.length - 1;
-      const half = uids.length / 2;
+      const numTeams = uids.length;
+      const numRounds = numTeams - 1;
+      const half = numTeams / 2;
       const schedule = [];
-
       let tournamentUids = [...uids];
 
       // Turno
@@ -166,42 +175,65 @@
         const roundMatches = [];
         for (let i = 0; i < half; i++) {
           const p1 = tournamentUids[i];
-          const p2 = tournamentUids[uids.length - 1 - i];
+          const p2 = tournamentUids[numTeams - 1 - i];
           if (p1 !== 'BYE' && p2 !== 'BYE') {
-            roundMatches.push({ p1: p1, p2: p2, s1: 0, s2: 0, played: false });
+            roundMatches.push({ p1, p2, s1: 0, s2: 0, played: false });
           }
         }
         schedule.push(roundMatches);
         tournamentUids.splice(1, 0, tournamentUids.pop());
       }
-
-      // Returno (Inverte mandante/visitante)
-      const returno = schedule.map(round => round.map(match => ({ p1: match.p2, p2: match.p1, s1: 0, s2: 0, played: false })));
       
-      return [...schedule, ...returno]; // Array de 38 posições, cada uma com 10 jogos
+      // Returno
+      const returno = schedule.map(r => r.map(m => ({ p1: m.p2, p2: m.p1, s1: 0, s2: 0, played: false })));
+      return [...schedule, ...returno]; // 38 Rodadas perfeitas
     }
 
-    //    function App() {
+    const computeStandings = (standingsObj, p1, p2, s1, s2) => {
+      const st = { ...standingsObj };
+      if(!st[p1]) st[p1] = { uid: p1, pts: 0, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0, sg: 0, streak: 0 };
+      if(!st[p2]) st[p2] = { uid: p2, pts: 0, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0, sg: 0, streak: 0 };
+
+      st[p1].j++; st[p2].j++;
+      st[p1].gp += s1; st[p1].gc += s2; st[p1].sg = st[p1].gp - st[p1].gc;
+      st[p2].gp += s2; st[p2].gc += s1; st[p2].sg = st[p2].gp - st[p2].gc;
+
+      if (s1 > s2) { 
+        st[p1].pts += 3; st[p1].v++; st[p2].d++; 
+        st[p1].streak = (st[p1].streak > 0 ? st[p1].streak + 1 : 1);
+        st[p2].streak = (st[p2].streak < 0 ? st[p2].streak - 1 : -1);
+      }
+      else if (s1 < s2) { 
+        st[p2].pts += 3; st[p2].v++; st[p1].d++; 
+        st[p2].streak = (st[p2].streak > 0 ? st[p2].streak + 1 : 1);
+        st[p1].streak = (st[p1].streak < 0 ? st[p1].streak - 1 : -1);
+      }
+      else { 
+        st[p1].pts += 1; st[p2].pts += 1; st[p1].e++; st[p2].e++; 
+        st[p1].streak = 0; st[p2].streak = 0;
+      }
+      return st;
+    }
+
+    function App() {
       const [user, setUser] = useState(null);
       const [playerName, setPlayerName] = useState('');
       const [roomId, setRoomId] = useState('');
       const [roomData, setRoomData] = useState(null);
-      const [appState, setAppState] = useState('MENU'); // MENU, LOBBY, DRAFT_SETUP, DRAFTING, TOURNAMENT
+      const [appState, setAppState] = useState('MENU'); // MENU, LOBBY, DRAFTING, TOURNAMENT
       const [error, setError] = useState('');
       
-      // Estado Local do Draft
       const [myFormation, setMyFormation] = useState('4-3-3');
       const [myTeam, setMyTeam] = useState([]);
       const [draftOptions, setDraftOptions] = useState([]);
+      const [isSimulating, setIsSimulating] = useState(false);
 
-      // Autenticação Silenciosa
       useEffect(() => {
-        auth.signInAnonymously().catch(e => setError("Erro ao conectar no Servidor."));
+        auth.signInAnonymously().catch(e => setError("Erro ao conectar."));
         const unsub = auth.onAuthStateChanged(u => setUser(u));
         return () => unsub();
       }, []);
 
-      // Sincronização em Tempo Real da Sala
       useEffect(() => {
         if(!user || !roomId || appState === 'MENU') return;
         const roomRef = db.ref(`games/${APP_ID}/${roomId}`);
@@ -210,10 +242,14 @@
             const data = snap.val();
             setRoomData(data);
             
-            // Máquina de Estados Guiada pelo Host
-            if(data.status === 'draft_setup' && appState === 'LOBBY') setAppState('DRAFT_SETUP');
-            if(data.status === 'drafting' && appState === 'DRAFT_SETUP') setAppState('DRAFTING');
-            if(data.status === 'tournament' && appState !== 'TOURNAMENT') setAppState('TOURNAMENT');
+            // Sync Master
+            if(data.status === 'drafting' && appState === 'LOBBY') {
+              setAppState('DRAFTING');
+              pullPacks(0);
+            }
+            if(data.status === 'tournament' && appState !== 'TOURNAMENT') {
+              setAppState('TOURNAMENT');
+            }
           } else {
             setAppState('MENU');
             setError('A sala não existe mais.');
@@ -222,123 +258,154 @@
         return () => roomRef.off('value', listener);
       }, [user, roomId, appState]);
 
-      //      const handleCreateRoom = async () => {
-        if(!playerName || !roomId) return setError("Digite seu Nome e a Sala.");
+      const handleCreateRoom = async () => {
+        if(!playerName || !roomId) return setError("Preencha Nome e Sala.");
         const roomRef = db.ref(`games/${APP_ID}/${roomId}`);
         const snap = await roomRef.get();
-        if(snap.exists()) return setError("Esta sala já está em uso.");
+        if(snap.exists()) return setError("Sala já existe.");
 
         await roomRef.set({
           hostUid: user.uid, status: 'lobby', currentRound: 0,
-          players: { [user.uid]: { name: playerName, team: [], overall: 0, isReady: false, isBot: false } },
+          players: { [user.uid]: { name: playerName, team: [], overall: 0, isReady: false } },
           standings: {}, artilharia: {}
         });
         setAppState('LOBBY');
-        setError('');
       };
 
       const handleJoinRoom = async () => {
-        if(!playerName || !roomId) return setError("Digite seu Nome e a Sala.");
+        if(!playerName || !roomId) return setError("Preencha Nome e Sala.");
         const roomRef = db.ref(`games/${APP_ID}/${roomId}`);
         const snap = await roomRef.get();
         if(!snap.exists()) return setError("Sala não encontrada.");
-        if(snap.val().status !== 'lobby') return setError("A partida já começou nesta sala.");
+        if(snap.val().status !== 'lobby') return setError("A partida já começou.");
         
-        await roomRef.update({ [`players/${user.uid}`]: { name: playerName, team: [], overall: 0, isReady: false, isBot: false } });
+        await roomRef.update({ [`players/${user.uid}`]: { name: playerName, team: [], overall: 0, isReady: false } });
         setAppState('LOBBY');
-        setError('');
       };
 
-      // Host clica para iniciar o setup do Draft. Injeta 19 bots se estiver sozinho, ou completa até 20.
-      const handleStartDraftSetup = async () => {
+      const startDraftAndFillBots = async () => {
         if (user.uid !== roomData?.hostUid) return;
         
         const currentPlayers = Object.keys(roomData.players || {});
-        const botsNeeded = 20 - currentPlayers.length; 
-        const updates = { status: 'draft_setup' };
+        const botsNeeded = 20 - currentPlayers.length; // Completa até 20 times pro Brasileirão
+        const updates = { status: 'drafting' };
         
         for(let i=0; i<botsNeeded; i++) {
             const botName = CPU_TEAMS[i % CPU_TEAMS.length];
-            // Gera um time falso pro bot para a artilharia e cálculo
-            const botTeam = FORMATIONS['4-4-2'].map((pos, idx) => ({
-               id: `bot_${i}_${idx}`, name: `Jogador ${idx+1}`, team: botName, pos: pos, overall: 75 + Math.floor(Math.random()*15)
-            }));
-            const botOvr = Math.round(botTeam.reduce((acc, p) => acc + p.overall, 0) / 11);
+            const botTeam = [
+               { id: `b${i}_1`, name: 'Atacante 9', pos: 'ATA', team: botName },
+               { id: `b${i}_2`, name: 'Meia 10', pos: 'MEI', team: botName }
+            ]; // Simplificado pro bot pontuar na artilharia
+            const botOvr = 75 + Math.floor(Math.random()*15);
             updates[`players/bot_${i}`] = { name: botName, team: botTeam, overall: botOvr, isReady: true, isBot: true };
         }
         await db.ref(`games/${APP_ID}/${roomId}`).update(updates);
       };
 
-      //      const generatePacks = (currentTeamLength) => {
-         if (currentTeamLength >= 11) return;
-         const reqPos = FORMATIONS[myFormation][currentTeamLength];
-         
-         let pool = RAW_DB.filter(p => p.pos === reqPos);
-         let options = pool.sort(() => 0.5 - Math.random()).slice(0, 3);
-         
-         // Fallback se faltar carta
-         while(options.length < 3) {
-            options.push({ id: `gen_${Date.now()}_${options.length}`, name: "Base", team: "Academy", year: 2024, overall: 75, pos: reqPos });
-         }
-         setDraftOptions(options);
-      };
-
-      const handleConfirmFormation = () => {
-         setAppState('DRAFTING');
-         generatePacks(0);
-         if(user.uid === roomData?.hostUid) db.ref(`games/${APP_ID}/${roomId}`).update({status: 'drafting'});
+      const pullPacks = (currentTeamLength) => {
+        if (currentTeamLength >= 11) return;
+        const reqPos = FORMATIONS[myFormation][currentTeamLength];
+        let pool = RAW_DB.filter(p => p.pos === reqPos);
+        let options = pool.sort(() => 0.5 - Math.random()).slice(0, 3);
+        
+        // Anti-Crash: Se não tiver carta, cria uma da base
+        while(options.length < 3) {
+           options.push({ id: `gen_${Date.now()}_${options.length}`, name: "Jogador da Base", year: 2024, team: "Academy", overall: 70, pos: reqPos });
+        }
+        setDraftOptions(options);
       };
 
       const pickPlayer = async (player) => {
-         const newTeam = [...myTeam, player];
-         setMyTeam(newTeam); // Sync local imediato
-         
-         if (newTeam.length < 11) {
-            generatePacks(newTeam.length);
-         } else {
-            setDraftOptions([]);
-            const finalOvr = Math.round(newTeam.reduce((acc, p) => acc + p.overall, 0) / 11);
-            // Salva no banco e declara pronto
-            await db.ref(`games/${APP_ID}/${roomId}/players/${user.uid}`).update({
-               team: newTeam, overall: finalOvr, isReady: true
-            });
-         }
+        const newTeam = [...myTeam, player];
+        setMyTeam(newTeam);
+        
+        if (newTeam.length < 11) {
+          pullPacks(newTeam.length);
+        } else {
+          setDraftOptions([]);
+          const finalOvr = Math.round(newTeam.reduce((acc, p) => acc + p.overall, 0) / 11);
+          await db.ref(`games/${APP_ID}/${roomId}/players/${user.uid}`).update({ team: newTeam, overall: finalOvr, isReady: true });
+        }
       };
 
-      const startBrasileirao = async () => {
-         if (user.uid !== roomData?.hostUid) return;
-         
-         const schedule = generateBrasileiraoSchedule(roomData.players);
-         const standings = {};
-         Object.keys(roomData.players).forEach(uid => {
-            standings[uid] = { uid, name: roomData.players[uid].name, pts: 0, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0, sg: 0 };
-         });
+      const startTournament = async () => {
+        if (user.uid !== roomData?.hostUid) return;
+        const schedule = generateSchedule(roomData.players);
+        
+        let initialStandings = {};
+        Object.keys(roomData.players).forEach(uid => {
+           initialStandings[uid] = { uid, pts: 0, j: 0, v: 0, e: 0, d: 0, gp: 0, gc: 0, sg: 0, streak: 0 };
+        });
 
-         await db.ref(`games/${APP_ID}/${roomId}`).update({
-            status: 'tournament', schedule, standings, artilharia: {}, currentRound: 0
-         });
+        await db.ref(`games/${APP_ID}/${roomId}`).update({ status: 'tournament', schedule, standings: initialStandings, artilharia: {}, currentRound: 0 });
       };
 
-      //      if (!user) return <div className="min-h-screen bg-bgBase flex items-center justify-center text-brandGreen font-black">Conectando...</div>;
+      const simulateRound = async () => {
+        if (user.uid !== roomData?.hostUid || roomData.currentRound >= 38 || isSimulating) return;
+        setIsSimulating(true);
+
+        const currentRoundIdx = roomData.currentRound;
+        const matches = roomData.schedule[currentRoundIdx];
+        let newStandings = { ...(roomData.standings || {}) };
+        let newArtilharia = { ...(roomData.artilharia || {}) };
+
+        const updatedMatches = matches.map(match => {
+            const t1 = roomData.players[match.p1];
+            const t2 = roomData.players[match.p2];
+            const ovr1 = (t1?.overall || 75) + (Math.random() * 8 - 4);
+            const ovr2 = (t2?.overall || 75) + (Math.random() * 8 - 4);
+            
+            let s1 = 0, s2 = 0;
+            const power1 = ovr1 / (ovr1 + ovr2);
+            const chances = 3 + Math.floor(Math.random() * 5); // 3 a 7 chances no jogo
+            
+            for(let i=0; i<chances; i++) {
+                if(Math.random() < power1) s1++; else s2++;
+            }
+
+            // Atribui gols pra Artilharia
+            if (s1 > 0 && t1 && t1.team) {
+                for(let g=0; g<s1; g++) {
+                    const scorer = t1.team[Math.floor(Math.random() * t1.team.length)];
+                    if(!newArtilharia[scorer.id]) newArtilharia[scorer.id] = { name: scorer.name, team: t1.name, goals: 0 };
+                    newArtilharia[scorer.id].goals++;
+                }
+            }
+            if (s2 > 0 && t2 && t2.team) {
+                for(let g=0; g<s2; g++) {
+                    const scorer = t2.team[Math.floor(Math.random() * t2.team.length)];
+                    if(!newArtilharia[scorer.id]) newArtilharia[scorer.id] = { name: scorer.name, team: t2.name, goals: 0 };
+                    newArtilharia[scorer.id].goals++;
+                }
+            }
+
+            newStandings = computeStandings(newStandings, match.p1, match.p2, s1, s2);
+            return { ...match, s1, s2, played: true };
+        });
+
+        await db.ref(`games/${APP_ID}/${roomId}`).update({
+            [`schedule/${currentRoundIdx}`]: updatedMatches,
+            standings: newStandings,
+            artilharia: newArtilharia,
+            currentRound: currentRoundIdx + 1
+        });
+        
+        setTimeout(() => setIsSimulating(false), 500); // Cooldown visual
+      };
+
+      if (!user) return <div className="min-h-screen bg-bgBase flex items-center justify-center font-black text-brandGreen">Conectando...</div>;
 
       if (appState === 'MENU') {
         return (
           <div className="min-h-screen flex items-center justify-center bg-bgBase p-4">
-             <div className="glass-panel p-10 w-full max-w-md animate-slide-up text-center">
-                <i className="fa-solid fa-futbol text-6xl text-brandGreen mb-4"></i>
-                <h1 className="text-4xl font-black text-white tracking-tight mb-2">DRAFT KINGS</h1>
-                <p className="text-brandGreen font-bold text-xs tracking-widest uppercase mb-8">Brasileirão Manager</p>
-                
+             <div className="bg-cardDark p-10 w-full max-w-md animate-slide-up text-center rounded-2xl border border-white/5 shadow-2xl">
+                <h1 className="text-4xl font-black text-white tracking-tight mb-8">DRAFT KINGS</h1>
                 <div className="space-y-4">
-                  <input className="w-full p-4 bg-black/40 rounded-xl text-white outline-none border border-white/10 focus:border-brandGreen font-bold transition" placeholder="Nome do Treinador" value={playerName} onChange={e=>setPlayerName(e.target.value)} />
-                  <input className="w-full p-4 bg-black/40 rounded-xl text-white outline-none border border-white/10 focus:border-brandGreen font-black uppercase text-center transition" placeholder="CÓDIGO DA SALA" value={roomId} onChange={e=>setRoomId(e.target.value.toUpperCase())} />
-                  
-                  {error && <div className="text-red-400 text-sm font-bold bg-red-900/30 p-3 rounded-lg border border-red-500/50">{error}</div>}
-                  
-                  <div className="flex flex-col gap-3 pt-4">
-                     <button onClick={handleCreateRoom} className="w-full bg-brandGreen text-black font-black py-4 rounded-xl hover:bg-brandGreenDark transition shadow-lg">CRIAR LIGA (HOST)</button>
-                     <button onClick={handleJoinRoom} className="w-full bg-transparent border border-brandGreen text-brandGreen font-black py-4 rounded-xl hover:bg-brandGreen/10 transition">ENTRAR NA LIGA</button>
-                  </div>
+                  <input className="w-full p-4 bg-bgBase rounded-xl text-white outline-none border border-white/10 focus:border-brandGreen font-bold" placeholder="Nome do Treinador" value={playerName} onChange={e=>setPlayerName(e.target.value)} />
+                  <input className="w-full p-4 bg-bgBase rounded-xl text-white outline-none border border-white/10 focus:border-brandGreen font-black uppercase text-center" placeholder="CÓDIGO DA SALA" value={roomId} onChange={e=>setRoomId(e.target.value.toUpperCase())} />
+                  {error && <div className="text-red-400 text-sm font-bold bg-red-900/30 p-3 rounded-lg">{error}</div>}
+                  <button onClick={handleCreateRoom} className="w-full bg-brandGreen text-bgBase font-black py-4 rounded-xl hover:scale-[1.02] transition">CRIAR LIGA (HOST)</button>
+                  <button onClick={handleJoinRoom} className="w-full bg-transparent border border-brandGreen text-brandGreen font-black py-4 rounded-xl hover:bg-brandGreen/10 transition">ENTRAR NA LIGA</button>
                 </div>
              </div>
           </div>
@@ -349,40 +416,21 @@
          const isHost = roomData?.hostUid === user?.uid;
          return (
            <div className="min-h-screen flex items-center justify-center bg-bgBase p-4">
-             <div className="glass-panel p-10 text-center max-w-lg w-full animate-slide-up">
-                <h2 className="text-3xl font-black mb-2 text-white">Lobby do Campeonato</h2>
+             <div className="bg-cardDark p-10 text-center max-w-lg w-full animate-slide-up rounded-2xl border border-white/5">
+                <h2 className="text-3xl font-black mb-2 text-white">Lobby da Liga</h2>
                 <p className="text-brandGreen font-mono mb-8 text-xl">SALA: {roomId}</p>
-                
-                <div className="bg-black/30 p-4 rounded-xl border border-white/5 mb-8">
-                   <h3 className="text-xs text-gray-400 uppercase tracking-widest mb-3">Treinadores Conectados</h3>
+                <div className="bg-bgBase p-4 rounded-xl border border-white/5 mb-8">
                    {Object.entries(roomData?.players || {}).map(([uid, p]) => (
                      <div key={uid} className="text-white font-bold py-2 border-b border-white/5 last:border-0">{p.name} {uid === user.uid && <span className="text-brandGreen text-xs">(Você)</span>}</div>
                    ))}
                 </div>
-
                 {isHost ? (
-                  <button onClick={handleStartDraftSetup} className="w-full bg-brandGreen text-black font-black py-4 rounded-xl shadow-lg">INICIAR DRAFT (PREENCHER 20 TIMES)</button>
+                  <button onClick={startDraftAndFillBots} className="w-full bg-brandGreen text-bgBase font-black py-4 rounded-xl hover:scale-105 transition">INICIAR DRAFT (Preencher 20 Times)</button>
                 ) : (
-                  <div className="text-yellow-500 font-bold animate-pulse">Aguardando o Host iniciar...</div>
+                  <div className="text-brandGreen font-bold animate-pulse">Aguardando o Host...</div>
                 )}
              </div>
            </div>
-         );
-      }
-
-      if (appState === 'DRAFT_SETUP') {
-         return (
-            <div className="min-h-screen bg-bgBase p-6 flex flex-col items-center justify-center">
-               <div className="glass-panel p-10 text-center max-w-2xl w-full animate-slide-up">
-                  <h1 className="text-4xl font-black mb-6">Escolha sua Formação</h1>
-                  <div className="grid grid-cols-3 gap-4 mb-8">
-                     {Object.keys(FORMATIONS).map(f => (
-                        <button key={f} onClick={()=>setMyFormation(f)} className={`py-6 rounded-xl font-black text-2xl border-2 transition ${myFormation === f ? 'bg-brandGreen border-brandGreen text-black' : 'bg-black/40 border-white/10 text-gray-400 hover:border-brandGreen'}`}>{f}</button>
-                     ))}
-                  </div>
-                  <button onClick={handleConfirmFormation} className="w-full bg-brandGreen text-black font-black py-4 rounded-xl text-xl">CONFIRMAR E ABRIR PACOTES</button>
-               </div>
-            </div>
          );
       }
 
@@ -397,31 +445,27 @@
              {!isMyDraftDone ? (
                <div className="text-center w-full max-w-4xl animate-slide-up mt-10">
                  <h1 className="text-4xl font-black mb-2">Escolha seu <span className="text-brandGreen underline">{reqPos}</span></h1>
-                 <p className="text-brandGreen font-bold text-xs uppercase tracking-widest mb-10">Jogador {myTeam.length + 1} de 11</p>
-                 
+                 <p className="text-gray-400 font-bold text-xs uppercase tracking-widest mb-10">Jogador {myTeam.length + 1} de 11</p>
                  <div className="flex flex-wrap justify-center gap-6">
                    {draftOptions.map(p => (
-                     <div key={p.id} onClick={() => pickPlayer(p)} className="glass-panel w-48 p-6 cursor-pointer hover:border-brandGreen hover:-translate-y-2 transition-all flex flex-col items-center text-center group">
+                     <div key={p.id} onClick={() => pickPlayer(p)} className="bg-cardDark border border-white/10 w-48 p-6 rounded-2xl cursor-pointer hover:border-brandGreen hover:-translate-y-2 transition-all flex flex-col items-center text-center group">
                        <div className="font-black text-5xl text-brandGreen mb-4 drop-shadow-md">{p.overall}</div>
                        <div className="font-black text-xl text-white leading-tight mb-2 group-hover:text-brandGreen transition">{p.name}</div>
-                       <div className="text-[10px] bg-black/50 border border-white/10 px-3 py-1 rounded font-bold uppercase tracking-widest mb-2">{p.pos}</div>
+                       <div className="text-[10px] bg-bgBase border border-white/10 px-3 py-1 rounded font-bold uppercase tracking-widest mb-2">{p.pos}</div>
                        <div className="text-xs text-gray-500 font-semibold">{p.team}</div>
                      </div>
                    ))}
                  </div>
                </div>
              ) : (
-               <div className="glass-panel p-12 text-center max-w-md w-full animate-slide-up mt-20">
+               <div className="bg-cardDark p-12 text-center max-w-md w-full animate-slide-up mt-20 rounded-2xl border border-white/5">
                  <i className="fa-solid fa-circle-check text-7xl text-brandGreen mb-6"></i>
                  <h2 className="text-3xl font-black text-white mb-2">Esquadrão Assinado!</h2>
                  <p className="text-gray-400 font-bold mb-8 text-lg">Overall Final: <span className="text-brandGreen">{roomData?.players?.[user?.uid]?.overall}</span></p>
-                 
                  {isHost && allReady ? (
-                   <button onClick={startBrasileirao} className="w-full bg-brandGreen text-black font-black py-4 rounded-xl shadow-lg hover:scale-105 transition text-lg">GERAR TABELA DO BRASILEIRÃO</button>
+                   <button onClick={startTournament} className="w-full bg-brandGreen text-bgBase font-black py-4 rounded-xl hover:scale-105 transition text-lg">GERAR TABELA DO BRASILEIRÃO</button>
                  ) : (
-                   <div className="text-yellow-500 font-bold text-sm animate-pulse border border-yellow-500/30 bg-yellow-500/10 p-4 rounded-xl">
-                      Aguardando os outros managers terminarem o Draft...
-                   </div>
+                   <div className="text-brandGreen font-bold animate-pulse">Aguardando os outros managers...</div>
                  )}
                </div>
              )}
@@ -429,14 +473,14 @@
          )
       }
 
-      //      if (appState === 'TOURNAMENT') {
-         if(!roomData?.schedule || !roomData?.standings) return <div className="min-h-screen flex items-center justify-center bg-bgBase text-brandGreen font-black">Montando Campeonato...</div>;
+      if (appState === 'TOURNAMENT') {
+         if(!roomData?.schedule || !roomData?.standings) return <div className="min-h-screen flex items-center justify-center bg-bgBase text-brandGreen font-black">Sincronizando Tabela...</div>;
 
          const currentRoundIndex = roomData.currentRound || 0;
          const isLeagueOver = currentRoundIndex >= 38;
          const currentMatches = isLeagueOver ? [] : roomData.schedule[currentRoundIndex];
 
-         // Ordenação da Tabela (Pontos > Vitórias > Saldo > Gols Pró)
+         // Sorting Standings
          const standingsArr = Object.values(roomData.standings).sort((a,b) => {
             if(b.pts !== a.pts) return b.pts - a.pts;
             if(b.v !== a.v) return b.v - a.v;
@@ -444,185 +488,108 @@
             return b.gp - a.gp;
          });
 
-         const myStats = roomData.standings[user.uid] || {pts:0, j:0, v:0, e:0, d:0, gp:0, gc:0, sg:0};
+         const myStats = roomData.standings[user.uid] || {pts:0, j:0, v:0, e:0, d:0, gp:0, gc:0, sg:0, streak:0};
          const myPos = standingsArr.findIndex(s => s.uid === user.uid) + 1;
-
-         // Artilharia Formatada
          const topScorers = Object.values(roomData.artilharia || {}).sort((a,b) => b.goals - a.goals).slice(0, 10);
 
-         // Lógica de Simulação de Rodada
-         const handleSimulateRound = async () => {
-            if(user.uid !== roomData?.hostUid || isLeagueOver) return;
+         // Find Next Opponent
+         let nextOppName = "---";
+         if (!isLeagueOver) {
+             const myMatch = currentMatches.find(m => m.p1 === user.uid || m.p2 === user.uid);
+             if (myMatch) {
+                 const oppId = myMatch.p1 === user.uid ? myMatch.p2 : myMatch.p1;
+                 nextOppName = roomData.players[oppId]?.name || "---";
+             }
+         }
 
-            const roundMatches = roomData.schedule[currentRoundIndex];
-            const newStandings = JSON.parse(JSON.stringify(roomData.standings));
-            let newArtilharia = roomData.artilharia ? JSON.parse(JSON.stringify(roomData.artilharia)) : {};
+         const getBadge = (myUid, match) => {
+             if (!match.played) return null;
+             const isP1 = match.p1 === myUid;
+             const myScore = isP1 ? match.s1 : match.s2;
+             const oppScore = isP1 ? match.s2 : match.s1;
+             if (myScore > oppScore) return <div className="w-8 h-8 rounded-full bg-[#00E676] text-[#0B1319] flex items-center justify-center font-black text-sm">V</div>;
+             if (myScore < oppScore) return <div className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center font-black text-sm">D</div>;
+             return <div className="w-8 h-8 rounded-full bg-yellow-400 text-[#0B1319] flex items-center justify-center font-black text-sm">E</div>;
+         }
 
-            const updatedMatches = roundMatches.map(match => {
-               const t1 = roomData.players[match.p1];
-               const t2 = roomData.players[match.p2];
-               
-               // Fator Casa e Aleatoriedade
-               const ovr1 = (t1?.overall || 75) + 3 + (Math.random()*10 - 5);
-               const ovr2 = (t2?.overall || 75) + (Math.random()*10 - 5);
-               
-               let s1 = 0, s2 = 0;
-               const power1 = ovr1 / (ovr1 + ovr2);
-               const chances = 4 + Math.floor(Math.random() * 4); // 4 a 7 chances no jogo
-               
-               for(let i=0; i<chances; i++) {
-                 if(Math.random() < 0.3) continue; // Chance errada
-                 if(Math.random() < power1) s1++; else s2++;
-               }
-
-               // Atualiza Classificação
-               const updateStats = (uid, gf, gs) => {
-                  newStandings[uid].j++;
-                  newStandings[uid].gp += gf;
-                  newStandings[uid].gc += gs;
-                  newStandings[uid].sg = newStandings[uid].gp - newStandings[uid].gc;
-                  if(gf > gs) { newStandings[uid].pts += 3; newStandings[uid].v++; }
-                  else if(gf === gs) { newStandings[uid].pts += 1; newStandings[uid].e++; }
-                  else { newStandings[uid].d++; }
-               };
-               updateStats(match.p1, s1, s2);
-               updateStats(match.p2, s2, s1);
-
-               // Atualiza Artilharia (Escolhe jogador aleatório do time)
-               const assignGoals = (teamObj, goals) => {
-                  if(!teamObj || !teamObj.team || goals === 0) return;
-                  for(let g=0; g<goals; g++) {
-                     // Prioriza atacantes e meias
-                     const scorers = teamObj.team.filter(p => ['ATA', 'PON', 'MEI'].includes(p.pos));
-                     const p = scorers.length > 0 ? scorers[Math.floor(Math.random() * scorers.length)] : teamObj.team[0];
-                     
-                     if(!newArtilharia[p.id]) newArtilharia[p.id] = { name: p.name, team: teamObj.name, goals: 0 };
-                     newArtilharia[p.id].goals += 1;
-                  }
-               };
-               assignGoals(t1, s1);
-               assignGoals(t2, s2);
-
-               return { ...match, s1, s2, played: true };
-            });
-
-            await db.ref(`games/${APP_ID}/${roomId}`).update({
-               [`schedule/${currentRoundIndex}`]: updatedMatches,
-               standings: newStandings,
-               artilharia: newArtilharia,
-               currentRound: currentRoundIndex + 1
-            });
-         };
-
-         // Identifica o próximo jogo do Usuário
-         const myNextMatch = currentMatches.find(m => m.p1 === user.uid || m.p2 === user.uid);
-         const nextOpponentId = myNextMatch ? (myNextMatch.p1 === user.uid ? myNextMatch.p2 : myNextMatch.p1) : null;
-         const nextOppName = nextOpponentId ? roomData.players[nextOpponentId]?.name : '---';
-
-         // Renderização Principal do Dashboard
          return (
-            <div className="min-h-screen bg-bgBase p-4 md:p-8 flex justify-center text-sm md:text-base">
-               <div className="max-w-[1600px] w-full flex flex-col lg:flex-row gap-6">
+            <div className="min-h-screen bg-bgBase p-4 md:p-8 font-sans text-gray-200">
+               <div className="max-w-[1600px] mx-auto flex flex-col xl:flex-row gap-6">
                   
                   {/* COLUNA ESQUERDA: SUA CAMPANHA */}
-                  <div className="w-full lg:w-[320px] flex flex-col gap-6 shrink-0">
-                     <button className="glass-panel px-6 py-4 flex items-center font-bold text-gray-300 hover:text-white transition group w-fit">
-                        <i className="fa-solid fa-arrow-left mr-3 group-hover:-translate-x-1 transition"></i> Voltar ao Menu
+                  <div className="w-full xl:w-[300px] flex flex-col gap-6 shrink-0">
+                     <button className="bg-cardDark px-6 py-4 rounded-xl border border-white/5 font-bold text-gray-300 hover:text-white transition w-fit">
+                        <i className="fa-solid fa-arrow-left mr-3"></i> Voltar ao Menu
                      </button>
 
-                     <div className="glass-panel p-6 flex flex-col gap-6">
-                        <h3 className="text-brandGreen font-black text-xs tracking-widest uppercase">Sua Campanha</h3>
-                        
-                        <div className="flex justify-between items-end border-b border-white/5 pb-6">
+                     <div className="bg-cardDark rounded-2xl p-6 border border-white/5 shadow-lg">
+                        <h3 className="text-brandGreen text-xs font-black tracking-widest uppercase mb-6">Sua Campanha</h3>
+                        <div className="flex justify-between items-end mb-6">
                            <div>
                               <div className="text-5xl font-black text-brandGreen">{myPos}</div>
-                              <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Posição</div>
+                              <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Posição</div>
                            </div>
                            <div className="text-right">
                               <div className="text-5xl font-black text-white">{myStats.pts}</div>
-                              <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Pontos</div>
+                              <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Pontos</div>
                            </div>
                         </div>
 
-                        <div className="border-b border-white/5 pb-6 space-y-2">
+                        <div className="border-t border-white/10 pt-4 mb-4">
                            <div className="font-black text-xl">{myStats.v}V {myStats.e}E {myStats.d}D</div>
-                           <div className="text-xs text-gray-400 font-semibold tracking-wide">GP {myStats.gp} / GC {myStats.gc} / SG {myStats.sg}</div>
+                           <div className="text-xs text-gray-400 font-medium mt-1">GP {myStats.gp} / GC {myStats.gc} / SG {myStats.sg}</div>
                         </div>
 
-                        <div>
-                           <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Próximo Jogo</div>
-                           <div className="font-black text-xl text-white truncate">{nextOppName}</div>
+                        <div className="border-t border-white/10 pt-4">
+                           <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Sequência</div>
+                           <div className="font-black text-xl text-white">{Math.abs(myStats.streak)} {myStats.streak > 0 ? 'Vitórias' : myStats.streak < 0 ? 'Derrotas' : 'Empates'}</div>
                         </div>
                      </div>
                   </div>
 
-                  {/* COLUNA CENTRAL: JOGO A JOGO E TABELA */}
-                  <div className="flex-1 flex flex-col gap-6 min-w-0">
-                     <div className="glass-panel p-6 md:p-8 flex flex-col">
-                        <div className="flex justify-between items-start mb-6">
-                           <div>
-                              <h3 className="text-brandGreen font-black text-xs tracking-widest uppercase mb-2">Brasileirão Jogo a Jogo</h3>
-                              <h1 className="text-4xl md:text-5xl font-black text-white">Campanha</h1>
-                           </div>
-                           {roomData.hostUid === user.uid && !isLeagueOver && (
-                              <button onClick={handleSimulateRound} className="bg-transparent border border-white/20 text-white font-bold px-6 py-3 rounded-xl hover:bg-white/5 transition flex items-center gap-2">
-                                 <i className="fa-solid fa-forward-step"></i> Simular Rodada
-                              </button>
-                           )}
-                           {isLeagueOver && <div className="text-brandGreen font-black text-xl"><i className="fa-solid fa-trophy mr-2"></i> FIM DE TEMPORADA</div>}
-                        </div>
+                  {/* COLUNA CENTRAL: JOGO A JOGO */}
+                  <div className="flex-1 bg-cardDark rounded-2xl p-6 md:p-8 border border-white/5 shadow-lg flex flex-col min-w-0">
+                     <h3 className="text-brandGreen text-xs font-black tracking-widest uppercase mb-2">Brasileirão Jogo a Jogo</h3>
+                     <h1 className="text-4xl md:text-5xl font-black text-white mb-2">Campanha</h1>
+                     <p className="text-gray-400 font-medium mb-8">Rodada {Math.min(38, currentRoundIndex + 1)}/38</p>
 
-                        <p className="text-gray-400 font-bold mb-6 text-lg">Rodada {Math.min(38, currentRoundIndex + 1)}/38</p>
-
-                        <div className="bg-cardDark border border-white/5 rounded-2xl p-5 flex flex-col md:flex-row justify-between items-center gap-4">
-                           <span className="font-bold text-gray-300">Classificação Atual (Top 8)</span>
-                        </div>
+                     <div className="bg-bgBase rounded-xl p-4 flex flex-col md:flex-row justify-between items-center mb-8 border border-white/5">
+                         <div className="flex gap-6 text-sm mb-4 md:mb-0">
+                             <span className="font-bold text-gray-300">{myStats.v}V {myStats.e}E {myStats.d}D</span>
+                             <span className="font-bold text-gray-300">GP {myStats.gp} / GC {myStats.gc}</span>
+                             <span className="font-bold text-gray-300">Próximo: <span className="text-white">{nextOppName}</span></span>
+                         </div>
+                         {isHost && !isLeagueOver && (
+                             <button onClick={simulateRound} disabled={isSimulating} className="bg-brandGreen text-bgBase font-black px-6 py-2 rounded-lg hover:scale-105 transition disabled:opacity-50">
+                                 {isSimulating ? 'Simulando...' : <><i className="fa-solid fa-rotate mr-2"></i> Simular Rodada</>}
+                             </button>
+                         )}
+                         {isLeagueOver && <div className="text-brandGreen font-black text-xl">FIM DA LIGA</div>}
                      </div>
 
-                     {/* Histórico / Feed de Rodadas */}
-                     <div className="flex-1 overflow-y-auto space-y-4 pb-10 pr-2">
-                        {/* Renderiza a Tabela Simplificada no topo do feed para contexto */}
-                        <div className="glass-panel p-4 overflow-x-auto">
-                           <table className="w-full text-left text-sm whitespace-nowrap">
-                              <thead className="text-gray-500 text-[10px] uppercase tracking-widest border-b border-white/10">
-                                 <tr><th className="pb-3 pl-4">#</th><th className="pb-3">Clube</th><th className="pb-3 text-center">Pts</th><th className="pb-3 text-center">J</th><th className="pb-3 text-center">V</th><th className="pb-3 text-center">E</th><th className="pb-3 text-center">D</th><th className="pb-3 text-center">SG</th></tr>
-                              </thead>
-                              <tbody className="font-semibold text-gray-300">
-                                 {standingsArr.slice(0,8).map((t, i) => (
-                                    <tr key={t.uid} className={`border-b border-white/5 last:border-0 hover:bg-white/5 transition ${t.uid === user.uid ? 'bg-brandGreen/10 text-brandGreen' : ''}`}>
-                                       <td className="py-3 pl-4">{i+1}</td>
-                                       <td className="py-3 truncate max-w-[150px]">{t.uid === user.uid ? 'Seu Esquadrão' : t.name}</td>
-                                       <td className="py-3 text-center font-black text-white">{t.pts}</td>
-                                       <td className="py-3 text-center">{t.j}</td><td className="py-3 text-center">{t.v}</td><td className="py-3 text-center">{t.e}</td><td className="py-3 text-center">{t.d}</td><td className="py-3 text-center">{t.sg}</td>
-                                    </tr>
-                                 ))}
-                              </tbody>
-                           </table>
-                        </div>
-
-                        {/* Jogos passados do Usuário */}
-                        {roomData.schedule.slice(0, currentRoundIndex).reverse().map((round, idx) => {
+                     <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+                        {roomData.schedule.slice(0, currentRoundIndex).reverse().map((round, rIdx) => {
                            const myMatch = round.find(m => m.p1 === user.uid || m.p2 === user.uid);
                            if(!myMatch) return null;
-                           
                            const isHome = myMatch.p1 === user.uid;
-                           const oppName = roomData.players[isHome ? myMatch.p2 : myMatch.p1].name;
-                           const myScore = isHome ? myMatch.s1 : myMatch.s2;
-                           const oppScore = isHome ? myMatch.s2 : myMatch.s1;
-                           const res = myScore > oppScore ? 'V' : myScore < oppScore ? 'D' : 'E';
-                           const badgeColors = res === 'V' ? 'bg-brandGreen text-black' : res === 'E' ? 'bg-yellow-400 text-black' : 'bg-red-500 text-white';
+                           const p1Name = isHome ? 'Seu Esquadrão' : roomData.players[myMatch.p1]?.name;
+                           const p2Name = !isHome ? 'Seu Esquadrão' : roomData.players[myMatch.p2]?.name;
 
                            return (
-                              <div key={idx} className="glass-panel p-5 flex justify-between items-center group hover:border-white/10 transition">
-                                 <div className="flex-1">
-                                    <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">RODADA {roomData.schedule.indexOf(round) + 1}/38</div>
-                                    <div className="font-black text-lg flex items-center gap-4">
-                                       <span className={`truncate w-1/3 text-right ${isHome ? 'text-brandGreen' : 'text-gray-400'}`}>{isHome ? 'Seu Esquadrão' : oppName}</span>
-                                       <span className="bg-black/50 px-4 py-1.5 rounded-lg border border-white/10">{myMatch.s1} x {myMatch.s2}</span>
-                                       <span className={`truncate w-1/3 text-left ${!isHome ? 'text-brandGreen' : 'text-gray-400'}`}>{!isHome ? 'Seu Esquadrão' : oppName}</span>
-                                    </div>
+                              <div key={rIdx} className="bg-bgBase rounded-xl p-4 border border-white/5 flex flex-col md:flex-row items-center justify-between gap-4">
+                                 <div className="w-full md:w-auto">
+                                    <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1 text-center md:text-left">RODADA {roomData.schedule.indexOf(round) + 1}/38</div>
                                  </div>
-                                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-lg shadow-lg shrink-0 ${badgeColors}`}>{res}</div>
+                                 <div className="flex-1 flex items-center justify-center w-full">
+                                    <div className={`flex-1 font-black text-sm md:text-lg truncate text-right ${isHome ? 'text-brandGreen' : 'text-gray-300'}`}>{p1Name}</div>
+                                    <div className="mx-2 md:mx-4 flex items-center gap-2">
+                                       <span className="bg-cardDark text-white px-3 py-1 md:px-4 md:py-2 rounded-lg font-black text-lg border border-white/10">{myMatch.s1}</span>
+                                       <span className="text-gray-600 font-black">X</span>
+                                       <span className="bg-cardDark text-white px-3 py-1 md:px-4 md:py-2 rounded-lg font-black text-lg border border-white/10">{myMatch.s2}</span>
+                                    </div>
+                                    <div className={`flex-1 font-black text-sm md:text-lg truncate text-left ${!isHome ? 'text-brandGreen' : 'text-gray-300'}`}>{p2Name}</div>
+                                 </div>
+                                 <div className="shrink-0">{getBadge(user.uid, myMatch)}</div>
                               </div>
                            )
                         })}
@@ -630,28 +597,23 @@
                   </div>
 
                   {/* COLUNA DIREITA: ARTILHARIA */}
-                  <div className="w-full lg:w-[320px] flex flex-col gap-4 shrink-0">
-                     <div className="glass-panel p-6 flex-1 flex flex-col">
-                        <h3 className="text-brandGreen font-black text-xs tracking-widest uppercase mb-6">Artilharia</h3>
-                        
-                        <div className="space-y-3 overflow-y-auto pr-2">
-                           {topScorers.length === 0 && <div className="text-gray-500 font-bold text-center mt-10">Nenhum gol na liga.</div>}
-                           {topScorers.map((s, i) => (
-                              <div key={i} className="bg-brandGreen rounded-2xl p-3 flex items-center gap-4 relative overflow-hidden group hover:scale-[1.02] transition">
-                                 {/* Efeito visual no card da artilharia */}
-                                 <div className="absolute -right-10 top-1/2 -translate-y-1/2 w-32 h-32 bg-white/20 blur-2xl rounded-full pointer-events-none"></div>
-                                 
-                                 <div className="w-8 h-8 rounded-full bg-black/20 flex items-center justify-center font-black text-black text-sm shrink-0">{i+1}</div>
-                                 <div className="flex-1 min-w-0 z-10">
-                                    <div className="font-black text-black text-base leading-tight truncate">{s.name}</div>
-                                    <div className="text-[10px] font-bold text-black/60 uppercase tracking-widest truncate">{s.team}</div>
-                                 </div>
-                                 <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center font-black text-white text-lg shadow-inner z-10">{s.goals}</div>
+                  <div className="w-full xl:w-[350px] bg-cardDark rounded-2xl p-6 border border-white/5 shadow-lg flex flex-col shrink-0">
+                     <h3 className="text-brandGreen text-xs font-black tracking-widest uppercase mb-6">Artilharia</h3>
+                     <div className="space-y-3 overflow-y-auto pr-2">
+                        {topScorers.length === 0 && <div className="text-gray-500 font-bold text-center mt-10">Nenhum gol na liga.</div>}
+                        {topScorers.map((scorer, i) => (
+                           <div key={i} className="bg-brandGreen text-[#0B1319] rounded-xl p-3 flex items-center gap-4 hover:-translate-y-1 transition-transform cursor-default shadow-md">
+                              <div className="w-8 h-8 rounded-full bg-[#0B1319]/20 flex items-center justify-center font-black text-sm">{i+1}</div>
+                              <div className="flex-1 min-w-0">
+                                 <div className="font-black text-base truncate leading-tight">{scorer.name}</div>
+                                 <div className="text-[10px] font-bold uppercase tracking-widest opacity-70 truncate">{scorer.team}</div>
                               </div>
-                           ))}
-                        </div>
+                              <div className="w-10 h-10 rounded-full bg-[#0B1319] flex items-center justify-center font-black text-white text-lg shadow-inner">{scorer.goals}</div>
+                           </div>
+                        ))}
                      </div>
                   </div>
+
                </div>
             </div>
          );
